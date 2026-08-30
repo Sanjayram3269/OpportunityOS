@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from app.api.routes.companies import router as companies_router
+from app.api.routes.leads import router as leads_router
 from app.api.routes.profiles import router as profiles_router
 
 
@@ -19,3 +21,5 @@ def health() -> dict[str, str]:
 
 
 app.include_router(profiles_router)
+app.include_router(companies_router)
+app.include_router(leads_router)
