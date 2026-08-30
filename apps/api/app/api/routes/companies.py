@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.schemas.company import CompanyCreate, CompanyRead, CompanyUpdate
 from app.schemas.lead import LeadRead
+from app.schemas.opportunity import OpportunityRead
 from app.services.company import (
     create_company,
     delete_company,
@@ -12,6 +13,7 @@ from app.services.company import (
     list_companies,
     update_company,
 )
+from app.services.opportunity import list_opportunities_by_company
 
 
 router = APIRouter(
@@ -65,6 +67,25 @@ def get_company_leads(
         )
 
     return list_company_leads(db, company_id)
+
+
+@router.get(
+    "/{company_id}/opportunities",
+    response_model=list[OpportunityRead],
+)
+def get_company_opportunities(
+    company_id: int,
+    db: Session = Depends(get_db),
+) -> list[OpportunityRead]:
+    company = get_company(db, company_id)
+
+    if company is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found",
+        )
+
+    return list_opportunities_by_company(db, company_id)
 
 
 @router.get(

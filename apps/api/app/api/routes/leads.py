@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.schemas.lead import LeadCreate, LeadRead, LeadUpdate
+from app.schemas.opportunity import OpportunityRead
 from app.services.lead import (
     create_lead,
     delete_lead,
@@ -10,6 +11,7 @@ from app.services.lead import (
     list_leads,
     update_lead,
 )
+from app.services.opportunity import list_opportunities_by_lead
 
 router = APIRouter(
     prefix="/leads",
@@ -37,6 +39,25 @@ def list_all(
     db: Session = Depends(get_db),
 ) -> list[LeadRead]:
     return list_leads(db)
+
+
+@router.get(
+    "/{lead_id}/opportunities",
+    response_model=list[OpportunityRead],
+)
+def get_lead_opportunities(
+    lead_id: int,
+    db: Session = Depends(get_db),
+) -> list[OpportunityRead]:
+    lead = get_lead(db, lead_id)
+
+    if lead is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lead not found",
+        )
+
+    return list_opportunities_by_lead(db, lead_id)
 
 
 @router.get(

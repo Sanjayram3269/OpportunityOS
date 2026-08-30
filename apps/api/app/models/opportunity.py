@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -11,9 +12,14 @@ class Opportunity(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    lead_id: Mapped[int] = mapped_column(
-        ForeignKey("leads.id", ondelete="CASCADE"),
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"),
         nullable=False,
+    )
+
+    lead_id: Mapped[int | None] = mapped_column(
+        ForeignKey("leads.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     type: Mapped[str] = mapped_column(
@@ -45,7 +51,7 @@ class Opportunity(Base):
         Integer,
     )
 
-    potential_value: Mapped[float | None] = mapped_column(
+    potential_value: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 2),
     )
 
@@ -66,6 +72,7 @@ class Opportunity(Base):
         nullable=False,
     )
 
+Index("ix_opportunities_company_id", Opportunity.company_id)
 Index("ix_opportunities_lead_id", Opportunity.lead_id)
 Index("ix_opportunities_status", Opportunity.status)
 Index("ix_opportunities_type", Opportunity.type)
