@@ -25,10 +25,13 @@ from sqlalchemy.orm import Session
 from app.ai.base import AIProvider, AIProviderError, AIPermissionError, AITimeoutError
 from app.ai.providers.openai_compat import OpenAICompatProvider
 from app.core.config import get_settings
+from app.email_provider.base import EmailProvider, DeliveryResult
+from app.email_provider.smtp_provider import SMTPEmailProvider
 from app.matching.extractor import extract_opportunity_features, extract_profile_features
 from app.matching.scorer import score_match
 from app.models.company import Company
 from app.models.experience import Experience
+from app.models.interaction import Interaction
 from app.models.lead import Lead
 from app.models.message import Message
 from app.models.opportunity import Opportunity
@@ -52,14 +55,16 @@ DRAFT = "DRAFT"
 PENDING_APPROVAL = "PENDING_APPROVAL"
 APPROVED = "APPROVED"
 READY_TO_SEND = "READY_TO_SEND"
+SENT = "SENT"
 REJECTED = "REJECTED"
 
 _VALID_TRANSITIONS: dict[str, set[str]] = {
     DRAFT: {PENDING_APPROVAL, REJECTED},
     PENDING_APPROVAL: {APPROVED, REJECTED},
     APPROVED: {READY_TO_SEND, REJECTED},
-    READY_TO_SEND: set(),
+    READY_TO_SEND: {SENT},
     REJECTED: set(),
+    SENT: set(),
 }
 
 
@@ -400,3 +405,129 @@ def mark_ready(db: Session, draft: Message) -> Message:
 def reject_draft(db: Session, draft: Message) -> Message:
     """Reject/cancel a draft."""
     return transition_draft(db, draft, REJECTED)
+
+
+# ── Email delivery ───────────────────────────────────────────────────────
+
+
+def _get_email_provider() -> EmailProvider | None:
+    """Attempt to create the email provider from configuration."""
+    try:
+        settings = get_settings()
+        if not settings.email_host:
+            return None
+        return SMTPEmailProvider(
+            smtp_host=settings.email_host,
+            smtp_port=settings.email_port,
+            smtp_username=settings.email_username or None,
+            smtp_password=settings.email_password or None,
+            smtp_use_tls=settings.email_use_tls,
+            from_address=settings.email_from_address or None,
+            from_name=settings.email_from_name or None,
+            timeout=settings.email_timeout,
+        )
+    except Exception as exc:
+        logger.debug("Email provider not available: %s", exc)
+        return None
+
+
+async def send_message(
+    db: Session,
+    message: Message,
+    email_provider: EmailProvider | None = None,
+) -> DeliveryResult:
+    """Send an approved, ready-to-send message via email.
+
+    Only READY_TO_SEND messages can be sent.
+    On success: marks message SENT, records Interaction.
+    On failure: keeps message READY_TO_SEND, returns error.
+
+    Args:
+        db: Database session.
+        message: The Message to send.
+        email_provider: Optional provider. If None, attempts auto-detection.
+
+    Returns:
+        DeliveryResult with success status and details.
+
+    Raises:
+        DraftStateError: If message is not in READY_TO_SEND state.
+        ValueError: If lead has no email address.
+    """
+    # ── Authorization gate ────────────────────────────────────────
+    if message.status != READY_TO_SEND:
+        raise DraftStateError(
+            f"Cannot send message in {message.status} state. "
+            f"Only READY_TO_SEND messages can be sent."
+        )
+
+    # ── Resolve recipient ─────────────────────────────────────────
+    lead = db.get(Lead, message.lead_id)
+    if lead is None:
+        return DeliveryResult.fail("system", "Lead not found")
+
+    if not lead.email:
+        return DeliveryResult.fail(
+            "system",
+            f"Lead '{lead.name}' has no email address",
+        )
+
+    if not message.subject:
+        return DeliveryResult.fail(
+            "system",
+            "Message has no subject",
+        )
+
+    # ── Get provider ──────────────────────────────────────────────
+    if email_provider is None:
+        email_provider = _get_email_provider()
+
+    if email_provider is None:
+        return DeliveryResult.fail(
+            "system",
+            "Email provider not configured",
+        )
+
+    # ── Send ──────────────────────────────────────────────────────
+    result = email_provider.send_email(
+        to_address=lead.email,
+        subject=message.subject,
+        body=message.body,
+    )
+
+    # ── Handle result ─────────────────────────────────────────────
+    if result.success:
+        from datetime import datetime, timezone
+
+        message.status = SENT
+        message.sent_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(message)
+
+        # Record interaction
+        interaction = Interaction(
+            lead_id=message.lead_id,
+            message_id=message.id,
+            type="EMAIL_SENT",
+            content=f"Email sent to {lead.email}",
+            metadata_={
+                "provider": result.provider,
+                "message_id": result.message_id,
+                "subject": message.subject,
+                "channel": message.channel,
+            },
+        )
+        db.add(interaction)
+        db.commit()
+
+        logger.info(
+            "Email sent: message_id=%d, lead_id=%d, provider=%s",
+            message.id, message.lead_id, result.provider,
+        )
+    else:
+        logger.warning(
+            "Email delivery failed: message_id=%d, error=%s",
+            message.id, result.error,
+        )
+
+    return result

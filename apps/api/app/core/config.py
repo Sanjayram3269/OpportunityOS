@@ -30,6 +30,18 @@ class Settings(BaseSettings):
     ai_timeout: int = 60  # seconds
     ai_max_tokens: int = 1024
 
+    # ── Email Delivery ──────────────────────────────────────────────
+    # Email is OPTIONAL. When email_host is empty, sending is disabled.
+    # The system works without email — drafts remain in READY_TO_SEND.
+    email_host: str = ""  # e.g. "smtp.gmail.com"
+    email_port: int = 587
+    email_username: str = ""
+    email_password: str = ""  # Use app passwords for Gmail
+    email_use_tls: bool = True
+    email_from_address: str = ""  # e.g. "you@gmail.com"
+    email_from_name: str = "OpportunityOS"
+    email_timeout: int = 30  # seconds
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

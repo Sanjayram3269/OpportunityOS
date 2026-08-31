@@ -108,6 +108,18 @@ class DraftStateTransitionResponse(BaseModel):
     message: str
 
 
+class SendDraftResponse(BaseModel):
+    """Response after attempting to send a draft."""
+
+    id: int
+    previous_status: str
+    new_status: str
+    success: bool
+    provider: str
+    message_id: str | None = None
+    error: str | None = None
+
+
 # Need to import json for from_message
 import json  # noqa: E402
 from app.models.message import Message  # noqa: E402

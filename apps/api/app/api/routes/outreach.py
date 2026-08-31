@@ -9,8 +9,9 @@ Endpoints:
     POST   /outreach/drafts/{id}/approve → Approve a draft
     POST   /outreach/drafts/{id}/ready   → Mark as ready to send
     POST   /outreach/drafts/{id}/reject  → Reject/cancel a draft
+    POST   /outreach/drafts/{id}/send    → Send a READY_TO_SEND message
 
-No messages are ever sent. The workflow ends at READY_TO_SEND.
+Only READY_TO_SEND messages can be sent.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from app.schemas.outreach import (
     DraftResponse,
     DraftStateTransitionResponse,
     DraftUpdateRequest,
+    SendDraftResponse,
 )
 from app.services.outreach import (
     APPROVED,
@@ -32,6 +34,7 @@ from app.services.outreach import (
     PENDING_APPROVAL,
     REJECTED,
     READY_TO_SEND,
+    SENT,
     DraftStateError,
     approve_draft,
     generate_draft,
@@ -39,6 +42,7 @@ from app.services.outreach import (
     list_drafts,
     mark_ready,
     reject_draft,
+    send_message,
     transition_draft,
     update_draft,
 )
@@ -272,6 +276,47 @@ def mark_draft_ready(
         previous_status=previous,
         new_status=updated.status,
         message="Draft marked as ready to send",
+    )
+
+
+@router.post(
+    "/drafts/{draft_id}/send",
+    response_model=SendDraftResponse,
+    summary="Send a READY_TO_SEND message",
+    description=(
+        "Send a message that has been approved and marked ready. "
+        "Only READY_TO_SEND messages can be sent. "
+        "On success, the message transitions to SENT and an Interaction is recorded."
+    ),
+)
+async def send_single_draft(
+    draft_id: int,
+    db: Session = Depends(get_db),
+) -> SendDraftResponse:
+    draft = get_draft(db, draft_id)
+    if draft is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Draft not found",
+        )
+
+    previous = draft.status
+    try:
+        result = await send_message(db, draft)
+    except DraftStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        )
+
+    return SendDraftResponse(
+        id=draft.id,
+        previous_status=previous,
+        new_status=draft.status,
+        success=result.success,
+        provider=result.provider,
+        message_id=result.message_id,
+        error=result.error,
     )
 
 
