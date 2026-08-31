@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     # ── Discovery source configuration ───────────────────────────────
     remotive_api_url: str = "https://remotive.com/api/remote-jobs"
     remotive_request_timeout: int = 30  # seconds
+    arbeitnow_api_url: str = "https://www.arbeitnow.com/api/job-board-api"
+    arbeitnow_request_timeout: int = 30  # seconds
 
     model_config = SettingsConfigDict(
         env_file=".env",

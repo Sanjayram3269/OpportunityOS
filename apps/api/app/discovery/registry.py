@@ -23,8 +23,15 @@ def _lazy_remotive() -> type["SourceAdapter"]:
     return RemotiveAdapter
 
 
+def _lazy_arbeitnow() -> type["SourceAdapter"]:
+    from app.discovery.adapters.arbeitnow import ArbeitnowAdapter
+
+    return ArbeitnowAdapter
+
+
 # source_name → factory that returns the adapter class (lazy import)
 _ADAPTER_FACTORIES: dict[str, callable] = {
+    "arbeitnow": _lazy_arbeitnow,
     "remotive": _lazy_remotive,
 }
 
