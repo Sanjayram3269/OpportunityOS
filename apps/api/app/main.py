@@ -1,6 +1,9 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.api.routes.ai_insight import router as ai_insight_router
+from app.api.routes.automation import router as automation_router
 from app.api.routes.campaigns import router as campaigns_router
 from app.api.routes.companies import router as companies_router
 from app.api.routes.discovery import router as discovery_router
@@ -14,9 +17,20 @@ from app.api.routes.planning import router as planning_router
 from app.api.routes.profiles import router as profiles_router
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
+    """Application lifespan — start/stop the automation scheduler."""
+    from app.automation.scheduler import start_scheduler, stop_scheduler
+
+    start_scheduler()
+    yield
+    stop_scheduler()
+
+
 app = FastAPI(
     title="OpportunityOS API",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 
@@ -41,3 +55,4 @@ app.include_router(outreach_router)
 app.include_router(followups_router)
 app.include_router(campaigns_router)
 app.include_router(exports_router)
+app.include_router(automation_router)

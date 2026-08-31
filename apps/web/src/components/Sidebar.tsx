@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/campaigns", label: "Campaigns", icon: "📁" },
   { href: "/companies", label: "Companies", icon: "🏢" },
   { href: "/leads", label: "Leads", icon: "👤" },
+  { href: "/automation", label: "Automation", icon: "⚡" },
   { href: "/export", label: "Export", icon: "📤" },
 ];
 

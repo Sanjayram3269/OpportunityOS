@@ -42,6 +42,20 @@ class Settings(BaseSettings):
     email_from_name: str = "OpportunityOS"
     email_timeout: int = 30  # seconds
 
+    # ── Automation Engine ──────────────────────────────────────────
+    automation_enabled: bool = False
+    automation_scheduler_interval_minutes: int = 60
+    automation_discovery_enabled: bool = True
+    automation_matching_enabled: bool = True
+    automation_ai_insights_enabled: bool = False  # Requires AI key
+    automation_outreach_drafts_enabled: bool = False
+    automation_followup_processing_enabled: bool = True
+    automation_sources: str = "remotive,arbeitnow,himalayas"  # comma-separated
+    automation_min_match_score: int = 60
+    automation_max_opportunities_per_run: int = 500
+    automation_max_drafts_per_run: int = 20
+    automation_dry_run: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

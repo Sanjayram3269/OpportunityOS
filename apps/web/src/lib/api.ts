@@ -335,4 +335,18 @@ export const exports_ = {
   },
 };
 
+// ── Automation ─────────────────────────────────────────────────────────
+
+export const automation = {
+  status: () =>
+    request<import("./types").AutomationConfig>("/api/automation/status"),
+  config: () =>
+    request<import("./types").AutomationConfig>("/api/automation/config"),
+  run: (params?: { dry_run?: boolean; source?: string }) =>
+    request<import("./types").AutomationRunResult>("/api/automation/run", {
+      method: "POST",
+      body: JSON.stringify(params || {}),
+    }),
+};
+
 export { ApiError };

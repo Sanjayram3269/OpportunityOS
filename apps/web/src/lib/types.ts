@@ -330,6 +330,61 @@ export const PRIORITY_COLORS: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-600",
 };
 
+// ── Automation ──────────────────────────────────────────────────────────
+
+export interface AutomationSourceResult {
+  source_name: string;
+  raw_count: number;
+  ingested: number;
+  duplicates_skipped: number;
+  companies_created: number;
+  success: boolean;
+  errors: string[];
+}
+
+export interface AutomationRunResult {
+  run_id: string;
+  status: string;
+  trigger: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_seconds: number | null;
+  dry_run: boolean;
+  sources_attempted: number;
+  sources_succeeded: number;
+  sources_failed: number;
+  source_results: AutomationSourceResult[];
+  opportunities_seen: number;
+  opportunities_created: number;
+  opportunities_deduplicated: number;
+  opportunities_scored: number;
+  high_match_count: number;
+  summer_2027_count: number;
+  now_count: number;
+  upcoming_count: number;
+  future_count: number;
+  unknown_count: number;
+  drafts_created: number;
+  followups_marked_due: number;
+  errors: string[];
+}
+
+export interface AutomationConfig {
+  enabled: boolean;
+  scheduler_active: boolean;
+  scheduler_interval_minutes: number;
+  discovery_enabled: boolean;
+  matching_enabled: boolean;
+  ai_insights_enabled: boolean;
+  outreach_drafts_enabled: boolean;
+  followup_processing_enabled: boolean;
+  sources: string[];
+  min_match_score: number;
+  max_opportunities_per_run: number;
+  max_drafts_per_run: number;
+  dry_run_default: boolean;
+}
+
 export const OPPORTUNITY_TYPE_LABELS: Record<string, string> = {
   INTERNSHIP: "Internship",
   FULL_TIME: "Full-time",
