@@ -1,16 +1,27 @@
 from __future__ import annotations
 
+import logging
+from dataclasses import dataclass, field
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.discovery.deduplicator import deduplicate
-from app.discovery.models import IngestionResult
+from app.discovery.enrichment import EnrichedOpportunity, enrich_all
+from app.discovery.location import LocationInfo
+from app.discovery.models import IngestionResult, RawOpportunity
 from app.discovery.normalizer import NormalizedOpportunity, normalize_all
-from app.discovery.registry import create_adapter, list_source_names
+from app.discovery.registry import (
+    create_adapter,
+    is_auth_required,
+    list_source_names,
+)
 from app.models.company import Company
 from app.models.opportunity import Opportunity
 from app.models.opportunity_evidence import OpportunityEvidence
+
+logger = logging.getLogger(__name__)
 
 
 # ── Company resolution ────────────────────────────────────────────────────
@@ -227,6 +238,17 @@ def run_source(
     Returns:
         An ``IngestionResult`` summary.
     """
+    # Gracefully handle auth-required stubs
+    if is_auth_required(source_name):
+        return IngestionResult(
+            source_name=source_name,
+            raw_count=0,
+            ingested=0,
+            duplicates_skipped=0,
+            companies_created=0,
+            errors=[f"Source '{source_name}' requires authorized integration"],
+        )
+
     try:
         adapter = create_adapter(source_name)
     except ValueError as exc:
@@ -242,6 +264,15 @@ def run_source(
     # Fetch raw opportunities from the adapter
     try:
         raw_items = adapter.discover()
+    except NotImplementedError as exc:
+        return IngestionResult(
+            source_name=source_name,
+            raw_count=0,
+            ingested=0,
+            duplicates_skipped=0,
+            companies_created=0,
+            errors=[f"Source not yet implemented: {exc!s}"],
+        )
     except Exception as exc:
         return IngestionResult(
             source_name=source_name,
@@ -265,3 +296,117 @@ def run_source(
     # Normalize → ingest
     normalized = normalize_all(raw_items)
     return ingest(db, normalized)
+
+
+# ── Enriched discovery (read-only, no persistence) ────────────────────────
+
+
+@dataclass
+class EnrichedDiscoveryResult:
+    """Result of enriched discovery — includes intelligence metadata."""
+
+    source_name: str
+    raw_count: int
+    enriched_count: int
+    enriched_items: list[EnrichedOpportunity] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+
+    # Aggregate stats
+    remote_count: int = 0
+    worldwide_count: int = 0
+    countries: list[str] = field(default_factory=list)
+    categories: list[str] = field(default_factory=list)
+    all_skills: list[str] = field(default_factory=list)
+
+
+def discover_enriched(
+    source_name: str,
+) -> EnrichedDiscoveryResult:
+    """Run a source adapter and return enriched results WITHOUT persisting.
+
+    This is a read-only operation useful for:
+      - Previewing what a source would produce
+      - Showing intelligence metadata in the frontend
+      - Testing adapter output
+
+    Returns enriched opportunity data with location intelligence,
+    skill extraction, and type classification.
+    """
+    # Gracefully handle auth-required stubs
+    if is_auth_required(source_name):
+        return EnrichedDiscoveryResult(
+            source_name=source_name,
+            raw_count=0,
+            enriched_count=0,
+            errors=[f"Source '{source_name}' requires authorized integration"],
+        )
+
+    try:
+        adapter = create_adapter(source_name)
+    except ValueError as exc:
+        return EnrichedDiscoveryResult(
+            source_name=source_name,
+            raw_count=0,
+            enriched_count=0,
+            errors=[str(exc)],
+        )
+
+    # Fetch
+    try:
+        raw_items = adapter.discover()
+    except NotImplementedError as exc:
+        return EnrichedDiscoveryResult(
+            source_name=source_name,
+            raw_count=0,
+            enriched_count=0,
+            errors=[f"Source not yet implemented: {exc!s}"],
+        )
+    except Exception as exc:
+        return EnrichedDiscoveryResult(
+            source_name=source_name,
+            raw_count=0,
+            enriched_count=0,
+            errors=[f"Adapter discover() failed: {exc!s}"],
+        )
+
+    if not raw_items:
+        return EnrichedDiscoveryResult(
+            source_name=source_name,
+            raw_count=0,
+            enriched_count=0,
+        )
+
+    # Normalize → enrich (no persistence)
+    normalized = normalize_all(raw_items)
+    enriched = enrich_all(normalized)
+
+    # Compute aggregate stats
+    countries_set: set[str] = set()
+    categories_set: set[str] = set()
+    all_skills_set: set[str] = set()
+    remote_count = 0
+    worldwide_count = 0
+
+    for item in enriched:
+        if item.is_remote:
+            remote_count += 1
+        if item.is_worldwide:
+            worldwide_count += 1
+        if item.country:
+            countries_set.add(item.country)
+        if item.category:
+            categories_set.add(item.category)
+        all_skills_set |= item.extracted_skills
+
+    return EnrichedDiscoveryResult(
+        source_name=source_name,
+        raw_count=len(raw_items),
+        enriched_count=len(enriched),
+        enriched_items=enriched,
+        errors=[],
+        remote_count=remote_count,
+        worldwide_count=worldwide_count,
+        countries=sorted(countries_set),
+        categories=sorted(categories_set),
+        all_skills=sorted(all_skills_set),
+    )

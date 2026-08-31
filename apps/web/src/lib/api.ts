@@ -155,10 +155,18 @@ export const aiInsight = {
 export const discovery = {
   sources: () =>
     request<import("./types").SourceListResponse>("/api/discovery/sources"),
+  sourcesMetadata: () =>
+    request<import("./types").SourceMetadataListResponse>("/api/discovery/sources/metadata"),
+  sourceMetadata: (name: string) =>
+    request<import("./types").SourceMetadataInfo>(`/api/discovery/sources/${name}/metadata`),
+  health: () =>
+    request<import("./types").DiscoveryHealthResponse>("/api/discovery/health"),
   run: (source: string) =>
     request<import("./types").IngestionResult>(`/api/discovery/run/${source}`, {
       method: "POST",
     }),
+  preview: (source: string) =>
+    request<import("./types").EnrichedDiscoveryResponse>(`/api/discovery/sources/${source}/preview`),
   ingestRaw: (items: unknown[]) =>
     request<import("./types").IngestionResult>("/api/discovery/run", {
       method: "POST",

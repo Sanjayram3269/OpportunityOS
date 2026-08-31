@@ -326,20 +326,82 @@ describe("Discovery", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        total_received: 10,
-        normalized: 8,
+        source_name: "remotive",
+        raw_count: 10,
+        ingested: 6,
         duplicates_skipped: 2,
-        created: 6,
-        errors: 0,
-        error_details: [],
+        companies_created: 3,
+        errors: [],
       }),
     });
 
     const result = await discovery.run("remotive");
-    expect(result.created).toBe(6);
+    expect(result.ingested).toBe(6);
     expect(mockFetch).toHaveBeenCalledWith(
       "http://localhost:8000/api/discovery/run/remotive",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("calls discovery sources metadata endpoint", async () => {
+    const { discovery } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        sources: [
+          { name: "remotive", display_name: "Remotive", requires_auth: false, adapter_available: true },
+          { name: "linkedin", display_name: "LinkedIn", requires_auth: true, adapter_available: false },
+        ],
+        active_count: 1,
+        total_count: 2,
+        auth_required_count: 1,
+      }),
+    });
+
+    const result = await discovery.sourcesMetadata();
+    expect(result.sources).toHaveLength(2);
+    expect(result.active_count).toBe(1);
+    expect(result.auth_required_count).toBe(1);
+  });
+
+  it("calls discovery health endpoint", async () => {
+    const { discovery } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        status: "healthy",
+        active_sources: ["remotive", "arbeitnow", "himalayas"],
+        auth_required_sources: ["linkedin", "handshake", "jobstep"],
+        total_sources: 6,
+      }),
+    });
+
+    const result = await discovery.health();
+    expect(result.status).toBe("healthy");
+    expect(result.active_sources).toHaveLength(3);
+  });
+
+  it("calls discovery preview endpoint", async () => {
+    const { discovery } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        source_name: "remotive",
+        raw_count: 50,
+        enriched_count: 50,
+        remote_count: 45,
+        worldwide_count: 30,
+        countries: ["Global"],
+        categories: ["Software Engineering"],
+        all_skills: ["python", "javascript"],
+        errors: [],
+        opportunities: [],
+      }),
+    });
+
+    const result = await discovery.preview("remotive");
+    expect(result.raw_count).toBe(50);
+    expect(result.remote_count).toBe(45);
+    expect(result.all_skills).toContain("python");
   });
 });

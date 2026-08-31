@@ -263,16 +263,78 @@ export interface OpportunityMatchInsightResponse extends MatchResult {
 // ── Discovery ────────────────────────────────────────────────────────────
 
 export interface IngestionResult {
-  total_received: number;
-  normalized: number;
+  source_name: string;
+  raw_count: number;
+  ingested: number;
   duplicates_skipped: number;
-  created: number;
-  errors: number;
-  error_details: string[];
+  companies_created: number;
+  errors: string[];
 }
 
 export interface SourceListResponse {
   sources: string[];
+}
+
+export interface SourceMetadataInfo {
+  name: string;
+  display_name: string;
+  source_type: string;
+  description: string;
+  requires_auth: boolean;
+  enabled: boolean;
+  geographic_coverage: string[];
+  supported_types: string[];
+  supports_remote: boolean;
+  supports_deadline: boolean;
+  supports_salary: boolean;
+  rate_limit_note: string;
+  source_url: string;
+  adapter_available: boolean;
+}
+
+export interface SourceMetadataListResponse {
+  sources: SourceMetadataInfo[];
+  active_count: number;
+  total_count: number;
+  auth_required_count: number;
+}
+
+export interface DiscoveryHealthResponse {
+  status: string;
+  active_sources: string[];
+  auth_required_sources: string[];
+  total_sources: number;
+}
+
+export interface EnrichedOpportunityInfo {
+  source_name: string;
+  external_id: string | null;
+  canonical_source_url: string | null;
+  normalized_title: string;
+  normalized_company_name: string;
+  description: string | null;
+  opportunity_type: string;
+  normalized_location: string | null;
+  is_remote: boolean;
+  is_worldwide: boolean;
+  city: string | null;
+  country: string | null;
+  category: string | null;
+  extracted_skills: string[];
+  deadline: string | null;
+}
+
+export interface EnrichedDiscoveryResponse {
+  source_name: string;
+  raw_count: number;
+  enriched_count: number;
+  remote_count: number;
+  worldwide_count: number;
+  countries: string[];
+  categories: string[];
+  all_skills: string[];
+  errors: string[];
+  opportunities: EnrichedOpportunityInfo[];
 }
 
 // ── Export ───────────────────────────────────────────────────────────────
