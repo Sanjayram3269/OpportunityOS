@@ -4,18 +4,19 @@ Uses asyncio for lightweight scheduling within the FastAPI process.
 Designed so the orchestration logic can later move to Celery/RQ/Temporal
 without rewriting the business logic.
 
-Safety:
-- Only runs when automation_enabled is True
-- Uses the same run_automation_cycle() as manual trigger
-- Never bypasses human approval for outreach
-- Gracefully handles scheduler errors
+Behavior:
+- Runs one automation cycle immediately on startup (if enabled)
+- Then runs cycles at the configured interval
+- Prevents overlapping scheduled runs via an asyncio.Lock
+- Survives individual cycle failures — keeps scheduling
+- Cancels cleanly on application shutdown
+- Manual runs go through the same lock to avoid corrupting shared state
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
 
 from app.automation.engine import run_automation_cycle
 from app.automation.models import AutomationRunResult, RunTrigger
@@ -28,18 +29,21 @@ logger = logging.getLogger(__name__)
 class AutomationScheduler:
     """Lightweight in-process scheduler for automation runs.
 
-    Usage:
-        scheduler = AutomationScheduler()
-        # On FastAPI startup:
-        scheduler.start()
-        # On FastAPI shutdown:
-        scheduler.stop()
+    Lifecycle:
+        start() → immediate run → sleep(interval) → run → sleep → …
+        stop()  → cancels the loop task, sets _running = False
+
+    Safety:
+        - An asyncio.Lock prevents overlapping scheduled runs
+        - A failed cycle is logged and the loop continues
+        - stop() cancels the task without blocking
     """
 
     def __init__(self) -> None:
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_run: AutomationRunResult | None = None
+        self._run_lock = asyncio.Lock()
 
     @property
     def is_active(self) -> bool:
@@ -50,7 +54,10 @@ class AutomationScheduler:
         return self._last_run
 
     def start(self) -> None:
-        """Start the scheduler if automation is enabled."""
+        """Start the scheduler if automation is enabled.
+
+        The first automation cycle runs immediately (no initial sleep).
+        """
         settings = get_settings()
         if not settings.automation_enabled:
             logger.info("Automation scheduler not started — automation is disabled")
@@ -68,49 +75,46 @@ class AutomationScheduler:
         )
 
     def stop(self) -> None:
-        """Stop the scheduler gracefully."""
+        """Stop the scheduler gracefully.
+
+        Sets the running flag to False and cancels the background task.
+        Does not block — the task will raise CancelledError on next await.
+        """
         self._running = False
         if self._task is not None and not self._task.done():
             self._task.cancel()
-            logger.info("Automation scheduler stopped")
+            logger.info("Automation scheduler stop requested")
         self._task = None
 
     async def _run_loop(self) -> None:
-        """Main scheduler loop — runs automation cycles periodically."""
+        """Main scheduler loop.
+
+        Runs one cycle immediately, then sleeps for the configured interval
+        before running the next cycle.  Uses an asyncio.Lock so only one
+        scheduled run executes at a time.
+        """
         while self._running:
             try:
                 settings = get_settings()
 
                 if not settings.automation_enabled:
-                    logger.info("Automation disabled — scheduler pausing")
+                    logger.info("Automation disabled — scheduler stopping")
                     break
 
                 interval_seconds = settings.automation_scheduler_interval_minutes * 60
 
-                # Wait for the configured interval
-                await asyncio.sleep(interval_seconds)
+                # ── Run the cycle (with overlap protection) ──────────
+                await self._execute_scheduled_cycle(settings)
 
                 if not self._running:
                     break
 
-                # Run the automation cycle
-                db = SessionLocal()
+                # ── Sleep until next cycle ───────────────────────────
                 try:
-                    result = await run_automation_cycle(
-                        db,
-                        trigger=RunTrigger.SCHEDULER,
-                        dry_run=settings.automation_dry_run,
-                    )
-                    self._last_run = result
-
-                    logger.info(
-                        "Scheduled automation run completed: id=%s status=%s created=%d",
-                        result.run_id, result.status.value, result.opportunities_created,
-                    )
-                except Exception as exc:
-                    logger.error("Scheduled automation run failed: %s", exc)
-                finally:
-                    db.close()
+                    await asyncio.sleep(interval_seconds)
+                except asyncio.CancelledError:
+                    logger.info("Automation scheduler sleep cancelled — shutting down")
+                    break
 
             except asyncio.CancelledError:
                 logger.info("Automation scheduler cancelled")
@@ -122,6 +126,60 @@ class AutomationScheduler:
                     await asyncio.sleep(60)
                 except asyncio.CancelledError:
                     break
+
+    async def _execute_scheduled_cycle(self, settings: object) -> None:
+        """Execute one scheduled automation cycle with overlap protection.
+
+        If a cycle is already running (manual or scheduled), this call
+        logs a skip and returns immediately.
+        """
+        if self._run_lock.locked():
+            logger.info("Skipping scheduled automation run — previous run still active")
+            return
+
+        async with self._run_lock:
+            db = SessionLocal()
+            try:
+                result = await run_automation_cycle(
+                    db,
+                    trigger=RunTrigger.SCHEDULER,
+                    dry_run=settings.automation_dry_run,
+                )
+                self._last_run = result
+
+                logger.info(
+                    "Scheduled automation run completed: id=%s status=%s created=%d",
+                    result.run_id, result.status.value, result.opportunities_created,
+                )
+            except Exception as exc:
+                logger.error("Scheduled automation run failed: %s", exc)
+            finally:
+                db.close()
+
+    async def execute_manual_run(
+        self,
+        *,
+        dry_run: bool = False,
+        source_override: str | None = None,
+    ) -> AutomationRunResult:
+        """Execute a manual automation run.
+
+        Uses the same lock as scheduled runs to prevent corruption
+        of shared state.  Returns the run result directly.
+        """
+        async with self._run_lock:
+            db = SessionLocal()
+            try:
+                result = await run_automation_cycle(
+                    db,
+                    trigger=RunTrigger.MANUAL,
+                    dry_run=dry_run,
+                    source_override=source_override,
+                )
+                self._last_run = result
+                return result
+            finally:
+                db.close()
 
 
 # ── Global scheduler instance ─────────────────────────────────────────────

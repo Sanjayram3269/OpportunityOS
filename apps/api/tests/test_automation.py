@@ -565,7 +565,7 @@ class TestAutomationHighMatch:
 
 
 class TestAutomationScheduler:
-    """Test scheduler behavior."""
+    """Basic scheduler tests (no start() calls — those are in test_scheduler.py)."""
 
     def test_scheduler_not_active_by_default(self):
         from app.automation.scheduler import AutomationScheduler

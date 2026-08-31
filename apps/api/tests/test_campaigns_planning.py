@@ -64,6 +64,7 @@ from app.services.followup import (
     PENDING as FU_PENDING,
     READY_TO_SEND as FU_READY,
 )
+from app.models.lead import Lead
 from app.services.planning import (
     HORIZON_FUTURE,
     HORIZON_NOW,
@@ -76,6 +77,13 @@ from app.services.planning import (
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
+
+
+def _create_lead(db, company, name="Test Lead"):
+    lead = Lead(company_id=company.id, name=name, email="lead@test.com", status="ACTIVE")
+    db.add(lead)
+    db.flush()
+    return lead
 
 
 def _create_company(db, name="CampCo"):
@@ -283,10 +291,11 @@ class TestCampaignSummary:
         c = create_campaign(db, name="Test", type="FULL_TIME")
         company = _create_company(db)
         opp = _create_opportunity(db, company)
+        lead = _create_lead(db, company)
         add_opportunity_to_campaign(db, c, opp.id)
 
         msg = Message(
-            lead_id=1, opportunity_id=opp.id, channel="EMAIL",
+            lead_id=lead.id, opportunity_id=opp.id, channel="EMAIL",
             direction="OUTBOUND", subject="Test", body="Hi",
             status="SENT",
         )
@@ -301,10 +310,11 @@ class TestCampaignSummary:
         c = create_campaign(db, name="Test", type="FULL_TIME")
         company = _create_company(db)
         opp = _create_opportunity(db, company)
+        lead = _create_lead(db, company)
         add_opportunity_to_campaign(db, c, opp.id)
 
         fu = FollowUp(
-            lead_id=1, opportunity_id=opp.id,
+            lead_id=lead.id, opportunity_id=opp.id,
             scheduled_for=datetime.now(timezone.utc),
             status="COMPLETED",
         )

@@ -7,11 +7,26 @@ from app.main import app
 
 
 @pytest.fixture()
-def db():
-    """Yield a transactional session, rolling back after each test."""
+def db(monkeypatch):
+    """Yield a transactional session, rolling back after each test.
+
+    Patches ``app.db.session.SessionLocal`` and ``app.automation.scheduler.SessionLocal``
+    so that services which call ``SessionLocal()`` internally get this test's session.
+    This ensures all DB writes (including ``db.commit()`` calls inside services)
+    stay within the test's transaction and are rolled back on teardown.
+    """
     connection = engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
+
+    # Patch SessionLocal everywhere it is imported so services use the
+    # test's session rather than creating independent sessions that
+    # would bypass the test's transactional boundary.
+    def _session_factory():
+        return session
+
+    monkeypatch.setattr("app.db.session.SessionLocal", _session_factory)
+    monkeypatch.setattr("app.automation.scheduler.SessionLocal", _session_factory)
 
     yield session
 

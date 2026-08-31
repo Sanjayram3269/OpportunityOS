@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
-from app.api.deps import get_db
-from app.automation.engine import get_automation_status, run_automation_cycle
-from app.automation.models import RunTrigger
+from app.automation.engine import get_automation_status
 from app.automation.scheduler import get_scheduler
 
 router = APIRouter(prefix="/automation", tags=["automation"])
@@ -37,7 +33,6 @@ class AutomationConfigUpdate(BaseModel):
 @router.post("/run")
 async def trigger_run(
     request: AutomationRunRequest | None = None,
-    db: Session = Depends(get_db),
 ) -> dict:
     """Trigger an automation run.
 
@@ -45,14 +40,14 @@ async def trigger_run(
     AI insights and outreach drafts are controlled by configuration.
 
     The run completes before returning — no background execution.
+    Uses the scheduler's lock to prevent overlapping runs.
     Outreach sending is NEVER triggered by automation.
     """
     dry_run = request.dry_run if request else False
     source_override = request.source if request else None
 
-    result = await run_automation_cycle(
-        db,
-        trigger=RunTrigger.MANUAL,
+    scheduler = get_scheduler()
+    result = await scheduler.execute_manual_run(
         dry_run=dry_run,
         source_override=source_override,
     )
