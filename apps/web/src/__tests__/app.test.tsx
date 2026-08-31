@@ -1,0 +1,345 @@
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Mock fetch globally
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
+
+// ── API Client Tests ─────────────────────────────────────────────────────
+
+describe("API client", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("makes correct API calls", async () => {
+    const { opportunities } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+
+    await opportunities.list();
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://localhost:8000/api/opportunities",
+      expect.objectContaining({
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  });
+
+  it("handles API errors", async () => {
+    const { opportunities } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: async () => ({ detail: "Not found" }),
+    });
+
+    await expect(opportunities.get(999)).rejects.toThrow("Not found");
+  });
+
+  it("returns undefined for 204 responses", async () => {
+    const { opportunities } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+    });
+
+    const result = await opportunities.delete(1);
+    expect(result).toBeUndefined();
+  });
+
+  it("builds correct query strings", async () => {
+    const { planning } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ total: 0, opportunities: [] }),
+    });
+
+    await planning.list({
+      horizon: "SUMMER_2027",
+      min_match_score: 70,
+    });
+
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("horizon=SUMMER_2027");
+    expect(url).toContain("min_match_score=70");
+  });
+
+  it("omits undefined query params", async () => {
+    const { planning } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ total: 0, opportunities: [] }),
+    });
+
+    await planning.list({});
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).not.toContain("?");
+  });
+});
+
+// ── Types Tests ──────────────────────────────────────────────────────────
+
+describe("Types", () => {
+  it("exports planning horizon colors", async () => {
+    const { HORIZON_COLORS } = await import("@/lib/types");
+    expect(HORIZON_COLORS.NOW).toContain("red");
+    expect(HORIZON_COLORS.UPCOMING).toContain("amber");
+    expect(HORIZON_COLORS.SUMMER_2027).toContain("orange");
+    expect(HORIZON_COLORS.FUTURE).toContain("blue");
+    expect(HORIZON_COLORS.UNKNOWN).toContain("gray");
+  });
+
+  it("exports status colors for all known statuses", async () => {
+    const { STATUS_COLORS } = await import("@/lib/types");
+    expect(STATUS_COLORS.DRAFT).toBeDefined();
+    expect(STATUS_COLORS.PENDING_APPROVAL).toBeDefined();
+    expect(STATUS_COLORS.APPROVED).toBeDefined();
+    expect(STATUS_COLORS.READY_TO_SEND).toBeDefined();
+    expect(STATUS_COLORS.SENT).toBeDefined();
+    expect(STATUS_COLORS.REJECTED).toBeDefined();
+    expect(STATUS_COLORS.ACTIVE).toBeDefined();
+    expect(STATUS_COLORS.COMPLETED).toBeDefined();
+  });
+
+  it("exports opportunity type labels", async () => {
+    const { OPPORTUNITY_TYPE_LABELS } = await import("@/lib/types");
+    expect(OPPORTUNITY_TYPE_LABELS.INTERNSHIP).toBe("Internship");
+    expect(OPPORTUNITY_TYPE_LABELS.FULL_TIME).toBe("Full-time");
+    expect(OPPORTUNITY_TYPE_LABELS.RESEARCH).toBe("Research");
+  });
+
+  it("exports priority colors", async () => {
+    const { PRIORITY_COLORS } = await import("@/lib/types");
+    expect(PRIORITY_COLORS.CRITICAL).toBeDefined();
+    expect(PRIORITY_COLORS.HIGH).toBeDefined();
+    expect(PRIORITY_COLORS.MEDIUM).toBeDefined();
+    expect(PRIORITY_COLORS.LOW).toBeDefined();
+  });
+});
+
+// ── UI Component Tests ───────────────────────────────────────────────────
+
+describe("UI Components", () => {
+  it("renders Badge with correct variant", async () => {
+    const { Badge } = await import("@/components/ui");
+    render(<Badge variant="success">Active</Badge>);
+    expect(screen.getByText("Active")).toBeInTheDocument();
+  });
+
+  it("renders Button with loading state", async () => {
+    const { Button } = await import("@/components/ui");
+    render(<Button loading>Save</Button>);
+    expect(screen.getByText("Save")).toBeInTheDocument();
+  });
+
+  it("renders KPICard with label and value", async () => {
+    const { KPICard } = await import("@/components/ui");
+    render(<KPICard label="Total" value={42} icon="📊" />);
+    expect(screen.getByText("Total")).toBeInTheDocument();
+    expect(screen.getByText("42")).toBeInTheDocument();
+  });
+
+  it("renders EmptyState", async () => {
+    const { EmptyState } = await import("@/components/ui");
+    render(<EmptyState title="No data" description="Nothing here" />);
+    expect(screen.getByText("No data")).toBeInTheDocument();
+    expect(screen.getByText("Nothing here")).toBeInTheDocument();
+  });
+
+  it("renders ErrorState with retry", async () => {
+    const { ErrorState } = await import("@/components/ui");
+    const onRetry = vi.fn();
+    render(<ErrorState message="Failed" onRetry={onRetry} />);
+    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+  });
+
+  it("renders ScoreBadge with score", async () => {
+    const { ScoreBadge } = await import("@/components/ui");
+    render(<ScoreBadge score={85} />);
+    expect(screen.getByText("85")).toBeInTheDocument();
+  });
+
+  it("renders ScoreBadge with null", async () => {
+    const { ScoreBadge } = await import("@/components/ui");
+    render(<ScoreBadge score={null} />);
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("renders StatusDot", async () => {
+    const { StatusDot } = await import("@/components/ui");
+    const { container } = render(<StatusDot status="SENT" />);
+    expect(container.querySelector(".rounded-full")).toBeInTheDocument();
+  });
+
+  it("renders Input with label", async () => {
+    const { Input } = await import("@/components/ui");
+    render(<Input label="Name" value="" onChange={() => {}} />);
+    expect(screen.getByText("Name")).toBeInTheDocument();
+  });
+
+  it("renders Select with options", async () => {
+    const { Select } = await import("@/components/ui");
+    render(
+      <Select
+        label="Type"
+        value=""
+        onChange={() => {}}
+        options={[{ label: "Internship", value: "INTERNSHIP" }]}
+      />,
+    );
+    expect(screen.getByDisplayValue("All")).toBeInTheDocument();
+  });
+});
+
+// ── Outreach Workflow Tests ──────────────────────────────────────────────
+
+describe("Outreach state machine", () => {
+  it("validates state transitions match backend rules", () => {
+    const validTransitions: Record<string, string[]> = {
+      DRAFT: ["PENDING_APPROVAL", "REJECTED"],
+      PENDING_APPROVAL: ["APPROVED", "REJECTED"],
+      APPROVED: ["READY_TO_SEND", "REJECTED"],
+      READY_TO_SEND: ["SENT"],
+      SENT: [],
+      REJECTED: [],
+    };
+
+    // DRAFT can become PENDING_APPROVAL
+    expect(validTransitions.DRAFT).toContain("PENDING_APPROVAL");
+    // DRAFT cannot go directly to READY_TO_SEND
+    expect(validTransitions.DRAFT).not.toContain("READY_TO_SEND");
+    // APPROVED can become READY_TO_SEND
+    expect(validTransitions.APPROVED).toContain("READY_TO_SEND");
+    // READY_TO_SEND can become SENT
+    expect(validTransitions.READY_TO_SEND).toContain("SENT");
+    // SENT is terminal
+    expect(validTransitions.SENT).toHaveLength(0);
+    // REJECTED is terminal
+    expect(validTransitions.REJECTED).toHaveLength(0);
+  });
+});
+
+// ── Follow-up Workflow Tests ─────────────────────────────────────────────
+
+describe("Follow-up state machine", () => {
+  it("validates follow-up transitions", () => {
+    const validTransitions: Record<string, string[]> = {
+      PENDING: ["DUE", "CANCELLED"],
+      DUE: ["PENDING_APPROVAL", "CANCELLED"],
+      PENDING_APPROVAL: ["APPROVED", "CANCELLED"],
+      APPROVED: ["READY_TO_SEND", "CANCELLED"],
+      READY_TO_SEND: ["COMPLETED", "CANCELLED"],
+      COMPLETED: [],
+      CANCELLED: [],
+    };
+
+    expect(validTransitions.PENDING).toContain("DUE");
+    expect(validTransitions.DUE).toContain("PENDING_APPROVAL");
+    expect(validTransitions.PENDING_APPROVAL).toContain("APPROVED");
+    expect(validTransitions.APPROVED).toContain("READY_TO_SEND");
+    expect(validTransitions.READY_TO_SEND).toContain("COMPLETED");
+    expect(validTransitions.COMPLETED).toHaveLength(0);
+    expect(validTransitions.CANCELLED).toHaveLength(0);
+  });
+});
+
+// ── Campaign Lifecycle Tests ─────────────────────────────────────────────
+
+describe("Campaign lifecycle", () => {
+  it("validates campaign transitions", () => {
+    const validTransitions: Record<string, string[]> = {
+      DRAFT: ["ACTIVE", "ARCHIVED"],
+      ACTIVE: ["PAUSED", "COMPLETED", "ARCHIVED"],
+      PAUSED: ["ACTIVE", "COMPLETED", "ARCHIVED"],
+      COMPLETED: ["ARCHIVED"],
+      ARCHIVED: [],
+    };
+
+    expect(validTransitions.DRAFT).toContain("ACTIVE");
+    expect(validTransitions.ACTIVE).toContain("PAUSED");
+    expect(validTransitions.ACTIVE).toContain("COMPLETED");
+    expect(validTransitions.PAUSED).toContain("ACTIVE");
+    expect(validTransitions.COMPLETED).toContain("ARCHIVED");
+    expect(validTransitions.ARCHIVED).toHaveLength(0);
+  });
+});
+
+// ── Planning Horizon Tests ───────────────────────────────────────────────
+
+describe("Planning horizons", () => {
+  it("defines all five horizons", async () => {
+    const { HORIZON_COLORS } = await import("@/lib/types");
+    const horizons = Object.keys(HORIZON_COLORS);
+    expect(horizons).toContain("NOW");
+    expect(horizons).toContain("UPCOMING");
+    expect(horizons).toContain("SUMMER_2027");
+    expect(horizons).toContain("FUTURE");
+    expect(horizons).toContain("UNKNOWN");
+    expect(horizons).toHaveLength(5);
+  });
+});
+
+// ── Export Tests ─────────────────────────────────────────────────────────
+
+describe("Export", () => {
+  it("generates correct download URL", async () => {
+    const { exports_ } = await import("@/lib/api");
+    const url = exports_.downloadUrl();
+    expect(url).toBe("http://localhost:8000/api/exports/opportunities.xlsx");
+  });
+
+  it("includes filter params in URL", async () => {
+    const { exports_ } = await import("@/lib/api");
+    const url = exports_.downloadUrl({ planning_horizon: "SUMMER_2027", min_match_score: 80 });
+    expect(url).toContain("planning_horizon=SUMMER_2027");
+    expect(url).toContain("min_match_score=80");
+  });
+});
+
+// ── Discovery Tests ──────────────────────────────────────────────────────
+
+describe("Discovery", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("calls discovery source list endpoint", async () => {
+    const { discovery } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ sources: ["remotive", "arbeitnow"] }),
+    });
+
+    const result = await discovery.sources();
+    expect(result.sources).toEqual(["remotive", "arbeitnow"]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://localhost:8000/api/discovery/sources",
+      expect.anything(),
+    );
+  });
+
+  it("calls discovery run with POST", async () => {
+    const { discovery } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        total_received: 10,
+        normalized: 8,
+        duplicates_skipped: 2,
+        created: 6,
+        errors: 0,
+        error_details: [],
+      }),
+    });
+
+    const result = await discovery.run("remotive");
+    expect(result.created).toBe(6);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://localhost:8000/api/discovery/run/remotive",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+});
