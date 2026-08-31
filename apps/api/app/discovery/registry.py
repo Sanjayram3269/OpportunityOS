@@ -29,9 +29,16 @@ def _lazy_arbeitnow() -> type["SourceAdapter"]:
     return ArbeitnowAdapter
 
 
+def _lazy_himalayas() -> type["SourceAdapter"]:
+    from app.discovery.adapters.himalayas import HimalayasAdapter
+
+    return HimalayasAdapter
+
+
 # source_name → factory that returns the adapter class (lazy import)
 _ADAPTER_FACTORIES: dict[str, callable] = {
     "arbeitnow": _lazy_arbeitnow,
+    "himalayas": _lazy_himalayas,
     "remotive": _lazy_remotive,
 }
 

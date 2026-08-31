@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     remotive_request_timeout: int = 30  # seconds
     arbeitnow_api_url: str = "https://www.arbeitnow.com/api/job-board-api"
     arbeitnow_request_timeout: int = 30  # seconds
+    himalayas_search_url: str = "https://himalayas.app/jobs/api/search"
+    himalayas_request_timeout: int = 30  # seconds
 
     model_config = SettingsConfigDict(
         env_file=".env",
