@@ -1,5 +1,6 @@
 from app.models.base import Base
 from app.models.campaign import Campaign
+from app.models.campaign_opportunity import CampaignOpportunity
 from app.models.company import Company
 from app.models.experience import Experience
 from app.models.followup import FollowUp
@@ -23,6 +24,7 @@ __all__ = [
     "Opportunity",
     "OpportunityEvidence",
     "Campaign",
+    "CampaignOpportunity",
     "Message",
     "Interaction",
     "FollowUp",
