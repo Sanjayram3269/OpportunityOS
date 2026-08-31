@@ -4,6 +4,7 @@ from app.api.routes.ai_insight import router as ai_insight_router
 from app.api.routes.campaigns import router as campaigns_router
 from app.api.routes.companies import router as companies_router
 from app.api.routes.discovery import router as discovery_router
+from app.api.routes.exports import router as exports_router
 from app.api.routes.leads import router as leads_router
 from app.api.routes.matching import router as matching_router
 from app.api.routes.opportunities import router as opportunities_router
@@ -39,3 +40,4 @@ app.include_router(ai_insight_router)
 app.include_router(outreach_router)
 app.include_router(followups_router)
 app.include_router(campaigns_router)
+app.include_router(exports_router)
