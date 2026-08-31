@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.discovery.deduplicator import deduplicate
 from app.discovery.models import IngestionResult
-from app.discovery.normalizer import NormalizedOpportunity
+from app.discovery.normalizer import NormalizedOpportunity, normalize_all
+from app.discovery.registry import create_adapter, list_source_names
 from app.models.company import Company
 from app.models.opportunity import Opportunity
 from app.models.opportunity_evidence import OpportunityEvidence
@@ -200,3 +201,67 @@ def ingest(
         companies_created=companies_created,
         errors=errors,
     )
+
+
+# ── Source-driven discovery ───────────────────────────────────────────────
+
+
+def run_source(
+    db: Session,
+    source_name: str,
+) -> IngestionResult:
+    """Run a registered source adapter, normalize, deduplicate, and ingest.
+
+    This is the main entry point for source-driven discovery:
+      1. Instantiate the adapter by source name
+      2. Call adapter.discover() to fetch raw opportunities
+      3. Normalize → deduplicate → ingest
+
+    The adapter handles its own HTTP/network concerns and should
+    never raise — failures are logged and return an empty result.
+
+    Args:
+        db: Database session.
+        source_name: Registered source name (e.g. 'remotive').
+
+    Returns:
+        An ``IngestionResult`` summary.
+    """
+    try:
+        adapter = create_adapter(source_name)
+    except ValueError as exc:
+        return IngestionResult(
+            source_name=source_name,
+            raw_count=0,
+            ingested=0,
+            duplicates_skipped=0,
+            companies_created=0,
+            errors=[str(exc)],
+        )
+
+    # Fetch raw opportunities from the adapter
+    try:
+        raw_items = adapter.discover()
+    except Exception as exc:
+        return IngestionResult(
+            source_name=source_name,
+            raw_count=0,
+            ingested=0,
+            duplicates_skipped=0,
+            companies_created=0,
+            errors=[f"Adapter discover() failed: {exc!s}"],
+        )
+
+    if not raw_items:
+        return IngestionResult(
+            source_name=source_name,
+            raw_count=0,
+            ingested=0,
+            duplicates_skipped=0,
+            companies_created=0,
+            errors=[],
+        )
+
+    # Normalize → ingest
+    normalized = normalize_all(raw_items)
+    return ingest(db, normalized)
