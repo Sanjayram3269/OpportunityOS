@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApi } from "@/lib/hooks";
 import { automation } from "@/lib/api";
 import type {
   AutomationConfig,
   AutomationRunResult,
+  AutomationRunHistoryItem,
 } from "@/lib/types";
 import {
   Card,
@@ -28,6 +29,13 @@ export default function AutomationPage() {
     refetch: refetchConfig,
   } = useApi(() => automation.status(), []);
 
+  const {
+    data: runHistoryData,
+    loading: historyLoading,
+    error: historyError,
+    refetch: refetchHistory,
+  } = useApi(() => automation.runs({ limit: 20 }), []);
+
   const [lastRun, setLastRun] = useState<AutomationRunResult | null>(null);
   const [running, setRunning] = useState(false);
   const [dryRunning, setDryRunning] = useState(false);
@@ -39,6 +47,7 @@ export default function AutomationPage() {
       const result = await automation.run({ dry_run: dryRun });
       setLastRun(result);
       refetchConfig();
+      refetchHistory();
     } catch (err) {
       console.error("Automation run failed:", err);
     } finally {
@@ -49,6 +58,8 @@ export default function AutomationPage() {
   if (configLoading) return <Spinner />;
   if (configError) return <ErrorState message={configError} onRetry={refetchConfig} />;
   if (!config) return <EmptyState title="No configuration" />;
+
+  const runHistory = (runHistoryData as { runs?: AutomationRunHistoryItem[] } | null)?.runs || [];
 
   return (
     <div className="space-y-6">
@@ -145,6 +156,13 @@ export default function AutomationPage() {
 
       {/* Last Run Results */}
       {lastRun && <RunResultCard result={lastRun} />}
+
+      {/* Persistent Run History */}
+      <RunHistorySection
+        runs={runHistory}
+        loading={historyLoading}
+        error={historyError}
+      />
 
       {/* Config requires environment variables */}
       <Card>
@@ -278,6 +296,76 @@ function RunResultCard({ result }: { result: AutomationRunResult }) {
             {result.errors.map((err, i) => (
               <p key={i} className="text-xs text-red-700">{err}</p>
             ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RunHistorySection({
+  runs,
+  loading,
+  error,
+}: {
+  runs: AutomationRunHistoryItem[];
+  loading: boolean;
+  error: string | null;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <h3 className="text-sm font-semibold text-gray-900">Run History</h3>
+      </CardHeader>
+      <CardContent>
+        {loading && <Spinner />}
+        {error && <ErrorState message={error} />}
+        {!loading && !error && runs.length === 0 && (
+          <EmptyState icon="📜" title="No runs yet" description="Run automation to see history here." />
+        )}
+        {!loading && !error && runs.length > 0 && (
+          <div className="space-y-1">
+            {runs.map((run) => {
+              const statusColors: Record<string, string> = {
+                COMPLETED: "bg-green-100 text-green-700",
+                FAILED: "bg-red-100 text-red-700",
+                RUNNING: "bg-blue-100 text-blue-700",
+              };
+              const time = run.started_at ? new Date(run.started_at).toLocaleTimeString() : "—";
+              const duration = run.duration_seconds != null ? `${run.duration_seconds.toFixed(1)}s` : "—";
+
+              return (
+                <div
+                  key={run.run_id}
+                  className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50 text-sm"
+                >
+                  <span className="text-gray-500 w-16 shrink-0">{time}</span>
+                  <Badge className="bg-gray-100 text-gray-600 text-xs">
+                    {run.trigger}
+                  </Badge>
+                  <Badge className={statusColors[run.status] || "bg-gray-100 text-gray-600"}>
+                    {run.status}
+                  </Badge>
+                  {run.dry_run && <Badge variant="info">Dry</Badge>}
+                  <span className="text-gray-500 shrink-0">{duration}</span>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-green-600">
+                    {run.opportunities_created} new
+                  </span>
+                  <span className="text-blue-600">
+                    {run.actions_generated} actions
+                  </span>
+                  <span className="text-amber-600">
+                    {run.notifications_generated} notifs
+                  </span>
+                  {run.error_summary && (
+                    <span className="text-red-600 text-xs truncate max-w-48">
+                      {run.error_summary}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>

@@ -26,6 +26,7 @@ from app.automation.models import (
     SourceResult,
 )
 from app.core.config import get_settings
+from app.models.automation_run import AutomationRun
 from app.discovery.registry import list_source_names
 from app.models.followup import FollowUp as FollowUpModel
 from app.models.opportunity import Opportunity
@@ -76,9 +77,10 @@ async def run_automation_cycle(
         dry_run=dry_run,
     )
 
+    trigger_val = trigger.value if hasattr(trigger, "value") else str(trigger)
     logger.info(
         "Automation run started: id=%s trigger=%s dry_run=%s",
-        run.run_id, trigger.value, dry_run,
+        run.run_id, trigger_val, dry_run,
     )
 
     try:
@@ -109,9 +111,16 @@ async def run_automation_cycle(
         logger.error("Automation run failed: %s", exc)
         run.fail(str(exc))
 
+    # Persist the run record
+    try:
+        _persist_run(db, run)
+    except Exception as exc:
+        logger.warning("Failed to persist automation run: %s", exc)
+
+    status_val = run.status.value if hasattr(run.status, "value") else str(run.status)
     logger.info(
         "Automation run completed: id=%s status=%s created=%d scored=%d",
-        run.run_id, run.status.value, run.opportunities_created,
+        run.run_id, status_val, run.opportunities_created,
         run.opportunities_scored,
     )
 
@@ -348,6 +357,54 @@ def _run_notification_sync(db: Session, run: AutomationRunResult) -> None:
     except Exception as exc:
         logger.warning("Notification sync failed: %s", exc)
         run.errors.append(f"Notification sync failed: {exc!s}")
+
+
+def _persist_run(db: Session, run: AutomationRunResult) -> None:
+    """Persist the AutomationRunResult to the automation_runs table.
+
+    If persistence fails, log the error but do not fail the run itself.
+    The intelligence pipeline already completed successfully.
+    """
+    try:
+        error_summary = None
+        if run.errors:
+            # Store only safe, human-readable error messages
+            safe_errors = [e for e in run.errors if len(e) < 500]
+            error_summary = "; ".join(safe_errors[:10]) if safe_errors else None
+
+        trigger_val = run.trigger.value if hasattr(run.trigger, "value") else str(run.trigger)
+        status_val = run.status.value if hasattr(run.status, "value") else str(run.status)
+
+        db_run = AutomationRun(
+            run_id=run.run_id,
+            trigger=trigger_val,
+            status=status_val,
+            dry_run=run.dry_run,
+            started_at=run.started_at,
+            completed_at=run.completed_at,
+            sources_attempted=run.sources_attempted,
+            sources_succeeded=run.sources_succeeded,
+            sources_failed=run.sources_failed,
+            opportunities_seen=run.opportunities_seen,
+            opportunities_created=run.opportunities_created,
+            opportunities_deduplicated=run.opportunities_deduplicated,
+            opportunities_scored=run.opportunities_scored,
+            high_match_count=run.high_match_count,
+            summer_2027_count=run.summer_2027_count,
+            now_count=run.now_count,
+            upcoming_count=run.upcoming_count,
+            future_count=run.future_count,
+            unknown_count=run.unknown_count,
+            actions_generated=run.actions_generated,
+            notifications_generated=run.notifications_generated,
+            followups_marked_due=run.followups_marked_due,
+            error_summary=error_summary,
+        )
+        db.add(db_run)
+        db.flush()
+    except Exception as exc:
+        logger.warning("Failed to persist automation run: %s", exc)
+        # Do not re-raise — the run itself completed
 
 
 def get_automation_status() -> dict:

@@ -389,6 +389,10 @@ export const automation = {
       method: "POST",
       body: JSON.stringify(params || {}),
     }),
+  runs: (params?: { status?: string; trigger?: string; limit?: number; offset?: number }) =>
+    request<import("./types").AutomationRunHistoryResponse>(
+      `/api/automation/runs${qs(params || {})}`,
+    ),
 };
 
 // ── Applications ────────────────────────────────────────────────────────

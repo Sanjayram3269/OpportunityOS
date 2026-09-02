@@ -592,6 +592,29 @@ export interface AutomationConfig {
   max_opportunities_per_run: number;
   max_drafts_per_run: number;
   dry_run_default: boolean;
+  last_run?: AutomationRunResult | null;
+}
+
+export interface AutomationRunHistoryItem {
+  run_id: string;
+  trigger: string;
+  status: string;
+  dry_run: boolean;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_seconds: number | null;
+  opportunities_created: number;
+  opportunities_scored: number;
+  actions_generated: number;
+  notifications_generated: number;
+  sources_succeeded: number;
+  sources_failed: number;
+  error_summary: string | null;
+}
+
+export interface AutomationRunHistoryResponse {
+  total: number;
+  runs: AutomationRunHistoryItem[];
 }
 
 export const OPPORTUNITY_TYPE_LABELS: Record<string, string> = {
