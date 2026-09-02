@@ -322,6 +322,17 @@ class TestSchedulerShutdown:
 class TestSchedulerSafety:
     """Test safety invariants that must never be violated."""
 
+    def test_no_automatic_notification_sending(self):
+        """Notification sync must only create attention records, never send externally."""
+        import app.services.notifications as notif_mod
+        import inspect
+
+        source = inspect.getsource(notif_mod)
+        assert "send_email" not in source
+        assert "send_message" not in source
+        assert "SMTPEmailProvider" not in source
+        assert "smtp" not in source.lower()
+
     def test_no_automatic_email_send(self):
         """The scheduler must never call send_message or email provider."""
         # Structural check: scheduler imports only run_automation_cycle,

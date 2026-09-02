@@ -100,6 +100,9 @@ async def run_automation_cycle(
         # ── Phase 5: Action generation ────────────────────────────
         _run_action_generation(db, run)
 
+        # ── Phase 6: Notification sync ────────────────────────────
+        _run_notification_sync(db, run)
+
         run.complete()
 
     except Exception as exc:
@@ -327,6 +330,24 @@ def _run_action_generation(db: Session, run: AutomationRunResult) -> None:
     except Exception as exc:
         logger.warning("Action generation failed: %s", exc)
         run.errors.append(f"Action generation failed: {exc!s}")
+
+
+def _run_notification_sync(db: Session, run: AutomationRunResult) -> None:
+    """Synchronize notifications from current system state.
+
+    This is safe: it creates attention/notification records only.
+    It never sends emails, never applies, never approves.
+    Notification sync is idempotent — repeated runs don't create duplicates.
+    """
+    try:
+        from app.services.notifications import sync_notifications
+        result = sync_notifications(db)
+        run.notifications_generated = result.get("created", 0)
+        db.flush()
+        logger.info("Notification sync: %d created", run.notifications_generated)
+    except Exception as exc:
+        logger.warning("Notification sync failed: %s", exc)
+        run.errors.append(f"Notification sync failed: {exc!s}")
 
 
 def get_automation_status() -> dict:

@@ -139,6 +139,75 @@ alembic revision --autogenerate -m "description"
 
 **Important:** Always run `alembic upgrade head` before starting the application.
 
+## Automation Scheduler
+
+The scheduler performs **internal opportunity intelligence only** — it discovers, normalizes, deduplicates, scores, plans, generates actions, and syncs notifications. It does **NOT** send emails, submit applications, approve outreach, or perform any external actions.
+
+### Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `AUTOMATION_ENABLED` | `false` | Enable the scheduler |
+| `AUTOMATION_SCHEDULER_INTERVAL_MINUTES` | `60` | Minutes between intelligence cycles |
+| `AUTOMATION_DISCOVERY_ENABLED` | `true` | Run source discovery |
+| `AUTOMATION_MATCHING_ENABLED` | `true` | Run deterministic matching |
+| `AUTOMATION_AI_INSIGHTS_ENABLED` | `false` | Generate AI insights (requires key) |
+| `AUTOMATION_OUTREACH_DRAFTS_ENABLED` | `false` | Generate outreach drafts |
+| `AUTOMATION_FOLLOWUP_PROCESSING_ENABLED` | `true` | Mark due follow-ups |
+| `AUTOMATION_SOURCES` | `remotive,arbeitnow,himalayas` | Comma-separated source names |
+| `AUTOMATION_MIN_MATCH_SCORE` | `60` | Minimum score for high-match counting |
+| `AUTOMATION_MAX_OPPORTUNITIES_PER_RUN` | `500` | Max opportunities to process |
+| `AUTOMATION_DRY_RUN` | `false` | Dry-run mode for the next run |
+
+### Enabling in Production
+
+```bash
+# In your .env or environment:
+AUTOMATION_ENABLED=true
+AUTOMATION_SCHEDULER_INTERVAL_MINUTES=60
+```
+
+### Intelligence Pipeline
+
+Each cycle runs in this order:
+1. **Discovery** — fetch from configured source adapters
+2. **Matching** — score un-scored opportunities
+3. **Planning** — classify into planning horizons
+4. **Follow-ups** — mark due follow-ups
+5. **Actions** — generate action items
+6. **Notifications** — sync attention notifications
+
+### Manual Run
+
+```bash
+# Trigger manually
+POST /automation/run
+
+# Dry run (no DB mutations)
+POST /automation/run {"dry_run": true}
+
+# Single source
+POST /automation/run {"source": "remotive"}
+```
+
+### Status
+
+```bash
+GET /automation/status
+GET /automation/config
+```
+
+### Safety
+
+- Scheduler only runs when explicitly enabled (`AUTOMATION_ENABLED=true`)
+- Does **NOT** send emails or messages
+- Does **NOT** submit applications
+- Does **NOT** approve outreach drafts
+- Does **NOT** bypass any approval workflow
+- Idempotent — repeated runs don't create duplicates
+- Overlap protection prevents concurrent cycles
+- One source failure doesn't stop other sources
+
 ## Health Checks
 
 | Endpoint | Purpose | Expected |

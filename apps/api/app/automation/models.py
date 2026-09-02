@@ -80,6 +80,9 @@ class AutomationRunResult:
     # Actions
     actions_generated: int = 0
 
+    # Notifications
+    notifications_generated: int = 0
+
     # Errors
     errors: list[str] = field(default_factory=list)
 
@@ -141,6 +144,7 @@ class AutomationRunResult:
             "drafts_created": self.drafts_created,
             "followups_marked_due": self.followups_marked_due,
             "actions_generated": self.actions_generated,
+            "notifications_generated": self.notifications_generated,
             "errors": self.errors,
         }
 

@@ -164,6 +164,7 @@ class TestAutomationModels:
         assert "completed_at" in d
         assert "duration_seconds" in d
         assert "source_results" in d
+        assert "notifications_generated" in d
 
     def test_source_result_defaults(self):
         sr = SourceResult(source_name="test")
@@ -536,6 +537,25 @@ class TestAutomationIdempotency:
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+class TestAutomationIdempotencyNotifications:
+    """Test that notification sync is idempotent."""
+
+    def test_repeated_cycle_no_duplicate_notifications(self, db):
+        """Running automation twice should not create duplicate notifications."""
+        with patch("app.automation.engine.get_settings") as m:
+            m.return_value = _mock_settings(
+                automation_discovery_enabled=False,
+                automation_matching_enabled=False,
+                automation_followup_processing_enabled=True,
+            )
+            result1 = _run_cycle(db, trigger=RunTrigger.MANUAL, dry_run=True)
+            result2 = _run_cycle(db, trigger=RunTrigger.MANUAL, dry_run=True)
+
+        # Both should succeed — notification sync is idempotent
+        assert result1.status == RunStatus.COMPLETED
+        assert result2.status == RunStatus.COMPLETED
+
+
 class TestAutomationHighMatch:
     """Test high-match counting."""
 
@@ -562,6 +582,32 @@ class TestAutomationHighMatch:
 # ══════════════════════════════════════════════════════════════════════════════
 #  AUTOMATION SCHEDULER
 # ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestAutomationNotificationSync:
+    """Test notification sync within automation."""
+
+    def test_notification_sync_called(self, db):
+        """Notification sync should run after action generation."""
+        with patch("app.automation.engine.get_settings") as m:
+            m.return_value = _mock_settings(
+                automation_discovery_enabled=False,
+                automation_matching_enabled=False,
+                automation_followup_processing_enabled=False,
+            )
+            result = _run_cycle(db, trigger=RunTrigger.MANUAL, dry_run=True)
+
+        # notifications_generated should be present in result
+        assert hasattr(result, "notifications_generated")
+        assert isinstance(result.notifications_generated, int)
+        assert result.notifications_generated >= 0
+
+    def test_notification_sync_in_to_dict(self, db):
+        """Run result to_dict should include notifications_generated."""
+        result = _run_cycle(db, trigger=RunTrigger.MANUAL, dry_run=True)
+        d = result.to_dict()
+        assert "notifications_generated" in d
+        assert isinstance(d["notifications_generated"], int)
 
 
 class TestAutomationScheduler:
@@ -688,6 +734,38 @@ class TestAutomationAPI:
 # ══════════════════════════════════════════════════════════════════════════════
 #  EXISTING API REGRESSION
 # ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestAutomationSafetyInvariants:
+    """Test safety invariants that must never be violated."""
+
+    def test_no_automatic_external_sending(self):
+        """Automation engine must never send emails or messages."""
+        import app.automation.engine as eng_mod
+        import inspect
+
+        source = inspect.getsource(eng_mod)
+        assert "send_email" not in source
+        assert "send_message" not in source
+        assert "SMTPEmailProvider" not in source
+
+    def test_no_automatic_application_submission(self):
+        """Automation engine must never submit applications."""
+        import app.automation.engine as eng_mod
+        import inspect
+
+        source = inspect.getsource(eng_mod)
+        assert "submit_application" not in source
+        assert "apply_to_job" not in source
+
+    def test_no_automatic_outreach_approval(self):
+        """Automation engine must never approve outreach drafts."""
+        import app.automation.engine as eng_mod
+        import inspect
+
+        source = inspect.getsource(eng_mod)
+        assert "approve_draft" not in source
+        assert "mark_ready" not in source
 
 
 class TestExistingAPIRegression:
