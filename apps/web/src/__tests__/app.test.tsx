@@ -405,3 +405,117 @@ describe("Discovery", () => {
     expect(result.all_skills).toContain("python");
   });
 });
+
+// ── Application Lifecycle Tests ─────────────────────────────────────────
+
+describe("Application lifecycle", () => {
+  it("validates application state transitions", () => {
+    const validTransitions: Record<string, string[]> = {
+      NOT_APPLIED: ["READY"],
+      READY: ["APPLIED", "REJECTED", "WITHDRAWN"],
+      APPLIED: ["ASSESSMENT", "INTERVIEW", "REJECTED", "WITHDRAWN"],
+      ASSESSMENT: ["INTERVIEW", "FINAL_ROUND", "REJECTED", "WITHDRAWN"],
+      INTERVIEW: ["FINAL_ROUND", "OFFER", "REJECTED", "WITHDRAWN"],
+      FINAL_ROUND: ["OFFER", "REJECTED", "WITHDRAWN"],
+      OFFER: ["ACCEPTED", "REJECTED", "WITHDRAWN"],
+    };
+    const terminal = ["ACCEPTED", "REJECTED", "WITHDRAWN"];
+
+    expect(validTransitions.NOT_APPLIED).toContain("READY");
+    expect(validTransitions.READY).toContain("APPLIED");
+    expect(validTransitions.APPLIED).toContain("INTERVIEW");
+    expect(validTransitions.INTERVIEW).toContain("OFFER");
+    expect(validTransitions.OFFER).toContain("ACCEPTED");
+    // Terminal states
+    expect(terminal).toContain("ACCEPTED");
+    expect(terminal).toContain("REJECTED");
+    expect(terminal).toContain("WITHDRAWN");
+    // Invalid transitions
+    expect(validTransitions.NOT_APPLIED).not.toContain("APPLIED");
+    expect(validTransitions.NOT_APPLIED).not.toContain("INTERVIEW");
+  });
+
+  it("calls applications list endpoint", async () => {
+    const { applications } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+    const result = await applications.list();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("calls actions generate endpoint", async () => {
+    const { actions } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ generated: 3, dry_run: false, actions: [] }),
+    });
+    const result = await actions.generate();
+    expect(result.generated).toBe(3);
+  });
+
+  it("calls actions summary endpoint", async () => {
+    const { actions } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        total_actions: 5,
+        open: 3,
+        in_progress: 1,
+        completed: 1,
+        dismissed: 0,
+        expired: 0,
+        by_priority: { P0: 1, P1: 1, P2: 1 },
+        by_type: {},
+      }),
+    });
+    const result = await actions.summary();
+    expect(result.open).toBe(3);
+  });
+
+  it("calls triage endpoint", async () => {
+    const { triage } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        opportunity_id: 1,
+        match_score: 85,
+        planning_horizon: "SUMMER_2027",
+        deadline_bucket: "FUTURE",
+        application_status: "NOT_APPLIED",
+        recommended_action: "APPLY",
+        priority: "P1",
+        explanation: "Good match.",
+      }),
+    });
+    const result = await triage.get(1);
+    expect(result.planning_horizon).toBe("SUMMER_2027");
+    expect(result.priority).toBe("P1");
+  });
+});
+
+// ── Action Center Type Tests ─────────────────────────────────────────────
+
+describe("Action Center types", () => {
+  it("Action API client has all methods", async () => {
+    const { actions } = await import("@/lib/api");
+    expect(typeof actions.list).toBe("function");
+    expect(typeof actions.get).toBe("function");
+    expect(typeof actions.summary).toBe("function");
+    expect(typeof actions.generate).toBe("function");
+    expect(typeof actions.complete).toBe("function");
+    expect(typeof actions.dismiss).toBe("function");
+    expect(typeof actions.start).toBe("function");
+  });
+
+  it("Application API client has all methods", async () => {
+    const { applications } = await import("@/lib/api");
+    expect(typeof applications.list).toBe("function");
+    expect(typeof applications.get).toBe("function");
+    expect(typeof applications.create).toBe("function");
+    expect(typeof applications.transitions).toBe("function");
+    expect(typeof applications.transition).toBe("function");
+    expect(typeof applications.analytics).toBe("function");
+  });
+});

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "📊" },
+  { href: "/actions", label: "Action Center", icon: "⚡" },
   { href: "/opportunities", label: "Opportunities", icon: "🎯" },
   { href: "/discover", label: "Discover", icon: "🔍" },
   { href: "/planning", label: "Planning", icon: "📅" },
@@ -14,7 +15,7 @@ const NAV_ITEMS = [
   { href: "/campaigns", label: "Campaigns", icon: "📁" },
   { href: "/companies", label: "Companies", icon: "🏢" },
   { href: "/leads", label: "Leads", icon: "👤" },
-  { href: "/automation", label: "Automation", icon: "⚡" },
+  { href: "/automation", label: "Automation", icon: "🤖" },
   { href: "/export", label: "Export", icon: "📤" },
 ];
 

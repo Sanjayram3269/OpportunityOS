@@ -3,6 +3,18 @@
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
+type GenerateActionsResponse = {
+  generated: number;
+  dry_run: boolean;
+  actions: Array<{
+    action_type: string;
+    priority: string;
+    entity_type: string;
+    entity_id: number;
+    title: string;
+  }>;
+};
+
 class ApiError extends Error {
   status: number;
   detail: string;
@@ -355,6 +367,56 @@ export const automation = {
       method: "POST",
       body: JSON.stringify(params || {}),
     }),
+};
+
+// ── Applications ────────────────────────────────────────────────────────
+
+export const applications = {
+  list: (params?: { status?: string; opportunity_id?: number; limit?: number }) =>
+    request<import("./types").Application[]>(`/api/applications${qs(params || {})}`),
+  get: (id: number) =>
+    request<import("./types").ApplicationWith>(`/api/applications/${id}`),
+  create: (data: { opportunity_id: number; lead_id?: number; application_url?: string; notes?: string }) =>
+    request<import("./types").Application>("/api/applications", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  transitions: (id: number) =>
+    request<import("./types").ApplicationTransitions>(`/api/applications/${id}/transitions`),
+  transition: (id: number, action: string) =>
+    request<import("./types").Application>(`/api/applications/${id}/${action}`, { method: "POST" }),
+  analytics: () =>
+    request<import("./types").ApplicationAnalytics>("/api/applications/analytics/summary"),
+};
+
+// ── Actions ─────────────────────────────────────────────────────────────
+
+export const actions = {
+  list: (params?: { status?: string; action_type?: string; priority?: string; limit?: number }) =>
+    request<import("./types").ActionItem[]>(`/api/actions${qs(params || {})}`),
+  get: (id: number) =>
+    request<import("./types").ActionItem>(`/api/actions/${id}`),
+  summary: () =>
+    request<import("./types").ActionSummary>("/api/actions/summary"),
+  generate: (dryRun?: boolean) => {
+    const params = dryRun ? "?dry_run=true" : "";
+    return request<GenerateActionsResponse>(`/api/actions/generate${params}`,
+      { method: "POST" },
+    );
+  },
+  complete: (id: number) =>
+    request<import("./types").ActionItem>(`/api/actions/${id}/complete`, { method: "POST" }),
+  dismiss: (id: number) =>
+    request<import("./types").ActionItem>(`/api/actions/${id}/dismiss`, { method: "POST" }),
+  start: (id: number) =>
+    request<import("./types").ActionItem>(`/api/actions/${id}/start`, { method: "POST" }),
+};
+
+// ── Triage ──────────────────────────────────────────────────────────────
+
+export const triage = {
+  get: (opportunityId: number) =>
+    request<import("./types").TriageResult>(`/api/opportunities/${opportunityId}/triage`),
 };
 
 export { ApiError };

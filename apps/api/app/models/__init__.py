@@ -1,3 +1,4 @@
+from app.models.application import Application, Action
 from app.models.base import Base
 from app.models.campaign import Campaign
 from app.models.campaign_opportunity import CampaignOpportunity
@@ -28,4 +29,6 @@ __all__ = [
     "Message",
     "Interaction",
     "FollowUp",
+    "Application",
+    "Action",
 ]

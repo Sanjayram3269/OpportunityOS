@@ -30,6 +30,7 @@ from app.discovery.registry import list_source_names
 from app.models.followup import FollowUp as FollowUpModel
 from app.models.opportunity import Opportunity
 from app.models.profile import Profile
+from app.services.action_center import generate_actions
 from app.services.discovery import ingest, run_source
 from app.services.followup import check_and_mark_due
 from app.services.matching import rank_opportunities
@@ -95,6 +96,9 @@ async def run_automation_cycle(
         # ── Phase 4: Follow-up processing ─────────────────────────
         if settings.automation_followup_processing_enabled:
             _run_followup_processing(db, run)
+
+        # ── Phase 5: Action generation ────────────────────────────
+        _run_action_generation(db, run)
 
         run.complete()
 
@@ -307,6 +311,22 @@ def _run_followup_processing(db: Session, run: AutomationRunResult) -> None:
             except Exception as exc:
                 logger.warning("Follow-up mark-due failed for %d: %s", fu.id, exc)
                 run.errors.append(f"Follow-up {fu.id} mark-due failed: {exc!s}")
+
+
+def _run_action_generation(db: Session, run: AutomationRunResult) -> None:
+    """Generate action items from current system state.
+
+    This is safe: it creates action ITEMS only.
+    It never submits applications, sends emails, or approves outreach.
+    """
+    try:
+        actions = generate_actions(db, dry_run=False)
+        run.actions_generated = len(actions)
+        db.flush()
+        logger.info("Action generation: %d actions created", len(actions))
+    except Exception as exc:
+        logger.warning("Action generation failed: %s", exc)
+        run.errors.append(f"Action generation failed: {exc!s}")
 
 
 def get_automation_status() -> dict:

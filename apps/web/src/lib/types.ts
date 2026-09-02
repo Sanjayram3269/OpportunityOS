@@ -392,6 +392,93 @@ export const PRIORITY_COLORS: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-600",
 };
 
+// ── Application ──────────────────────────────────────────────────────────
+
+export interface Application {
+  id: number;
+  opportunity_id: number;
+  lead_id: number | null;
+  status: string;
+  application_url: string | null;
+  notes: string | null;
+  rejection_reason: string | null;
+  applied_at: string | null;
+  last_status_change_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApplicationWith extends Application {
+  opportunity: {
+    id: number;
+    title: string;
+    type: string;
+    status: string;
+    match_score: number | null;
+    deadline: string | null;
+  } | null;
+  company: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+export interface ApplicationTransitions {
+  current_status: string;
+  valid_transitions: string[];
+  is_terminal: boolean;
+}
+
+// ── Action ──────────────────────────────────────────────────────────────
+
+export interface ActionItem {
+  id: number;
+  action_type: string;
+  priority: string;
+  entity_type: string;
+  entity_id: number;
+  title: string;
+  description: string | null;
+  status: string;
+  source: string | null;
+  due_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface ActionSummary {
+  total_actions: number;
+  open: number;
+  in_progress: number;
+  completed: number;
+  dismissed: number;
+  expired: number;
+  by_priority: Record<string, number>;
+  by_type: Record<string, number>;
+}
+
+export interface TriageResult {
+  opportunity_id: number;
+  match_score: number | null;
+  planning_horizon: string;
+  deadline_bucket: string;
+  application_status: string;
+  recommended_action: string;
+  priority: string;
+  explanation: string;
+}
+
+export interface ApplicationAnalytics {
+  total: number;
+  by_status: Record<string, number>;
+  by_type: Record<string, number>;
+  by_horizon: Record<string, number>;
+  average_match_score: number | null;
+  interview_rate: number | null;
+  offer_rate: number | null;
+  rejection_rate: number | null;
+}
+
 // ── Automation ──────────────────────────────────────────────────────────
 
 export interface AutomationSourceResult {

@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.routes.ai_insight import router as ai_insight_router
+from app.api.routes.applications import router as applications_router
 from app.api.routes.automation import router as automation_router
 from app.api.routes.campaigns import router as campaigns_router
 from app.api.routes.companies import router as companies_router
@@ -47,6 +48,7 @@ app.include_router(profiles_router)
 app.include_router(companies_router)
 app.include_router(leads_router)
 app.include_router(planning_router)  # Before opportunities to avoid /opportunities/planning vs /{id} conflict
+app.include_router(applications_router)
 app.include_router(opportunities_router)
 app.include_router(discovery_router)
 app.include_router(matching_router)
