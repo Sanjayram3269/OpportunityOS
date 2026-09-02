@@ -476,4 +476,33 @@ export const analyticsDeep = {
     request<CampaignDrilldownResp>(`/api/analytics/campaigns/${campaignId}`),
 };
 
+// ── Notifications / Attention ───────────────────────────────────────
+
+type NotificationItem = import("./types").NotificationItem;
+type UnreadCountResponse = import("./types").UnreadCountResponse;
+type SyncResponse = import("./types").SyncResponse;
+
+export const notifications = {
+  list: (params?: {
+    unread_only?: boolean;
+    notification_type?: string;
+    severity?: string;
+    limit?: number;
+  }) =>
+    request<NotificationItem[]>(`/api/notifications${qs(params || {})}`),
+  unreadCount: () =>
+    request<UnreadCountResponse>("/api/notifications/unread-count"),
+  markRead: (id: number) =>
+    request<{ id: number; read_at: string | null }>(
+      `/api/notifications/${id}/read`,
+      { method: "POST" },
+    ),
+  markAllRead: () =>
+    request<{ marked_read: number }>("/api/notifications/read-all", {
+      method: "POST",
+    }),
+  sync: () =>
+    request<SyncResponse>("/api/notifications/sync", { method: "POST" }),
+};
+
 export { ApiError };

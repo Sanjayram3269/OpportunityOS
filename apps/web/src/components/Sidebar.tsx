@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { notifications } from "@/lib/api";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "📊" },
+  { href: "/notifications", label: "Attention", icon: "🔔" },
   { href: "/actions", label: "Action Center", icon: "⚡" },
   { href: "/opportunities", label: "Opportunities", icon: "🎯" },
   { href: "/discover", label: "Discover", icon: "🔍" },
@@ -28,6 +30,20 @@ export function Sidebar({
   onClose?: () => void;
 }) {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    notifications
+      .unreadCount()
+      .then((data) => {
+        if (!cancelled) setUnreadCount(data.unread_count);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
@@ -68,6 +84,8 @@ export function Sidebar({
                 ? pathname === "/"
                 : pathname.startsWith(item.href);
 
+            const showBadge = item.href === "/notifications" && unreadCount > 0;
+
             return (
               <Link
                 key={item.href}
@@ -81,6 +99,11 @@ export function Sidebar({
               >
                 <span className="text-base">{item.icon}</span>
                 {item.label}
+                {showBadge && (
+                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </Link>
             );
           })}

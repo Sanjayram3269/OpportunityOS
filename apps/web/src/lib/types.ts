@@ -932,3 +932,28 @@ export interface CampaignDrilldownResponse {
   activity: CampaignDrilldownActivity;
   planning: CampaignDrilldownPlanning;
 }
+
+// ── Notifications / Attention ─────────────────────────────────────────
+
+export interface NotificationItem {
+  id: number;
+  notification_type: string;
+  title: string;
+  message: string | null;
+  severity: string;
+  source_type: string;
+  source_id: number;
+  read_at: string | null;
+  dismissed_at: string | null;
+  due_at: string | null;
+  created_at: string;
+}
+
+export interface UnreadCountResponse {
+  unread_count: number;
+}
+
+export interface SyncResponse {
+  created: number;
+  timestamp: string;
+}

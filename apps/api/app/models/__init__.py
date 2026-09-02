@@ -9,6 +9,7 @@ from app.models.followup import FollowUp
 from app.models.interaction import Interaction
 from app.models.lead import Lead
 from app.models.message import Message
+from app.models.notification import Notification
 from app.models.opportunity import Opportunity
 from app.models.opportunity_evidence import OpportunityEvidence
 from app.models.profile import Profile
@@ -33,4 +34,5 @@ __all__ = [
     "Application",
     "Action",
     "ApplicationEvent",
+    "Notification",
 ]

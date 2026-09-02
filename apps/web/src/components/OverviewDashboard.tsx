@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useApi } from "@/lib/hooks";
-import { dashboard } from "@/lib/api";
-import type { CommandCenterResponse } from "@/lib/types";
+import { dashboard, notifications } from "@/lib/api";
+import type { CommandCenterResponse, NotificationItem } from "@/lib/types";
 import {
   KPICard,
   Card,
@@ -43,6 +44,9 @@ export function OverviewDashboard() {
 
       {/* Overview KPIs */}
       <KPIRow overview={cmd.overview} />
+
+      {/* Attention / Notifications */}
+      <AttentionSection />
 
       {/* Today / Urgent */}
       <TodaySection today={cmd.today} />
@@ -582,5 +586,71 @@ function StatBlock({
       </span>
       <span className="text-xs text-gray-500">{label}</span>
     </div>
+  );
+}
+
+// ── Attention / Notifications ─────────────────────────────────────────
+
+function AttentionSection() {
+  const data = useApi(
+    () => notifications.list({ limit: 10 }),
+    [],
+  );
+
+  if (data.loading) return null;
+  if (data.error) return null;
+
+  const items = (data.data as NotificationItem[]) || [];
+  if (items.length === 0) return null;
+
+  const severityIcon: Record<string, string> = {
+    CRITICAL: "🚨",
+    HIGH: "⚠️",
+    MEDIUM: "📌",
+    LOW: "ℹ️",
+  };
+
+  return (
+    <Card className="border-amber-200">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🔔</span>
+            <h2 className="text-lg font-semibold">Attention</h2>
+            <Badge className="bg-amber-100 text-amber-800">
+              {items.length} item{items.length !== 1 ? "s" : ""}
+            </Badge>
+          </div>
+          <Link
+            href="/notifications"
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            View all →
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {items.slice(0, 5).map((n) => (
+            <div
+              key={n.id}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50"
+            >
+              <span className="text-sm">
+                {severityIcon[n.severity] || "📌"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-gray-900 truncate block">
+                  {n.title}
+                </span>
+              </div>
+              <Badge className="bg-gray-100 text-gray-600 text-xs">
+                {n.severity}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
