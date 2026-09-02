@@ -4,15 +4,15 @@ services:
     container_name: opportunityos-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: opportunityos
-      POSTGRES_USER: opportunityos
-      POSTGRES_PASSWORD: opportunityos_dev
+      POSTGRES_DB: ${POSTGRES_DB:-opportunityos}
+      POSTGRES_USER: ${POSTGRES_USER:-opportunityos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - opportunityos_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U opportunityos -d opportunityos"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opportunityos} -d ${POSTGRES_DB:-opportunityos}"]
       interval: 5s
       timeout: 5s
       retries: 10

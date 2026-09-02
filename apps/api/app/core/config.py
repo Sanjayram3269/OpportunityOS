@@ -4,7 +4,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # ── Core ─────────────────────────────────────────────────────────
     database_url: str
+    environment: str = "development"  # development | test | production
+    debug: bool = True  # Must be False in production
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+
+    # ── CORS ──────────────────────────────────────────────────────────
+    # Comma-separated list of allowed origins.
+    # In development: http://localhost:3000,http://localhost:3001
+    # In production: set to your actual frontend domain(s)
+    cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
     # ── Discovery source configuration ───────────────────────────────
     remotive_api_url: str = "https://remotive.com/api/remote-jobs"
@@ -17,13 +28,6 @@ class Settings(BaseSettings):
     # ── AI Intelligence Layer ────────────────────────────────────────
     # AI is OPTIONAL. When ai_api_key is empty, the system works
     # with deterministic matching only.
-    # Supported providers (all use OpenAI-compatible API):
-    #   - HuggingFace Inference API (free tier)
-    #     URL: https://api-inference.huggingface.co/models/<model>
-    #     Key: HF token from https://huggingface.co/settings/tokens
-    #   - OpenRouter (free models available)
-    #     URL: https://openrouter.ai/api/v1/chat/completions
-    #     Key: OpenRouter key from https://openrouter.ai/keys
     ai_api_url: str = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
     ai_api_key: str = ""  # Empty = AI disabled, system still works
     ai_model: str = "mistralai/Mistral-7B-Instruct-v0.3"
@@ -32,7 +36,6 @@ class Settings(BaseSettings):
 
     # ── Email Delivery ──────────────────────────────────────────────
     # Email is OPTIONAL. When email_host is empty, sending is disabled.
-    # The system works without email — drafts remain in READY_TO_SEND.
     email_host: str = ""  # e.g. "smtp.gmail.com"
     email_port: int = 587
     email_username: str = ""
@@ -55,6 +58,22 @@ class Settings(BaseSettings):
     automation_max_opportunities_per_run: int = 500
     automation_max_drafts_per_run: int = 20
     automation_dry_run: bool = False
+
+    # ── Logging ───────────────────────────────────────────────────
+    log_level: str = "INFO"  # DEBUG | INFO | WARNING | ERROR
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse comma-separated CORS origins into a list."""
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+    @property
+    def is_development(self) -> bool:
+        return self.environment == "development"
 
     model_config = SettingsConfigDict(
         env_file=".env",
