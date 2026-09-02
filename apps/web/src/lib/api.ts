@@ -69,59 +69,59 @@ function qs(params: Record<string, string | number | boolean | null | undefined>
 // ── Profiles ─────────────────────────────────────────────────────────────
 
 export const profiles = {
-  list: () => request<import("./types").Profile[]>("/api/profiles"),
-  get: (id: number) => request<import("./types").Profile>(`/api/profiles/${id}`),
+  list: () => request<import("./types").Profile[]>("/profiles"),
+  get: (id: number) => request<import("./types").Profile>(`/profiles/${id}`),
   create: (data: Record<string, unknown>) =>
-    request<import("./types").Profile>("/api/profiles", { method: "POST", body: JSON.stringify(data) }),
+    request<import("./types").Profile>("/profiles", { method: "POST", body: JSON.stringify(data) }),
   update: (id: number, data: Record<string, unknown>) =>
-    request<import("./types").Profile>(`/api/profiles/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    request<import("./types").Profile>(`/profiles/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>(`/api/profiles/${id}`, { method: "DELETE" }),
+    request<void>(`/profiles/${id}`, { method: "DELETE" }),
 };
 
 // ── Companies ────────────────────────────────────────────────────────────
 
 export const companies = {
-  list: () => request<import("./types").Company[]>("/api/companies"),
-  get: (id: number) => request<import("./types").Company>(`/api/companies/${id}`),
+  list: () => request<import("./types").Company[]>("/companies"),
+  get: (id: number) => request<import("./types").Company>(`/companies/${id}`),
   create: (data: Record<string, unknown>) =>
-    request<import("./types").Company>("/api/companies", { method: "POST", body: JSON.stringify(data) }),
+    request<import("./types").Company>("/companies", { method: "POST", body: JSON.stringify(data) }),
   update: (id: number, data: Record<string, unknown>) =>
-    request<import("./types").Company>(`/api/companies/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    request<import("./types").Company>(`/companies/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>(`/api/companies/${id}`, { method: "DELETE" }),
+    request<void>(`/companies/${id}`, { method: "DELETE" }),
   getLeads: (id: number) =>
-    request<import("./types").Lead[]>(`/api/companies/${id}/leads`),
+    request<import("./types").Lead[]>(`/companies/${id}/leads`),
   getOpportunities: (id: number) =>
-    request<import("./types").Opportunity[]>(`/api/companies/${id}/opportunities`),
+    request<import("./types").Opportunity[]>(`/companies/${id}/opportunities`),
 };
 
 // ── Leads ────────────────────────────────────────────────────────────────
 
 export const leads = {
-  list: () => request<import("./types").Lead[]>("/api/leads"),
-  get: (id: number) => request<import("./types").Lead>(`/api/leads/${id}`),
+  list: () => request<import("./types").Lead[]>("/leads"),
+  get: (id: number) => request<import("./types").Lead>(`/leads/${id}`),
   create: (data: Record<string, unknown>) =>
-    request<import("./types").Lead>("/api/leads", { method: "POST", body: JSON.stringify(data) }),
+    request<import("./types").Lead>("/leads", { method: "POST", body: JSON.stringify(data) }),
   update: (id: number, data: Record<string, unknown>) =>
-    request<import("./types").Lead>(`/api/leads/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    request<import("./types").Lead>(`/leads/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>(`/api/leads/${id}`, { method: "DELETE" }),
+    request<void>(`/leads/${id}`, { method: "DELETE" }),
   getOpportunities: (id: number) =>
-    request<import("./types").Opportunity[]>(`/api/leads/${id}/opportunities`),
+    request<import("./types").Opportunity[]>(`/leads/${id}/opportunities`),
 };
 
 // ── Opportunities ────────────────────────────────────────────────────────
 
 export const opportunities = {
-  list: () => request<import("./types").Opportunity[]>("/api/opportunities"),
-  get: (id: number) => request<import("./types").Opportunity>(`/api/opportunities/${id}`),
+  list: () => request<import("./types").Opportunity[]>("/opportunities"),
+  get: (id: number) => request<import("./types").Opportunity>(`/opportunities/${id}`),
   create: (data: Record<string, unknown>) =>
-    request<import("./types").Opportunity>("/api/opportunities", { method: "POST", body: JSON.stringify(data) }),
+    request<import("./types").Opportunity>("/opportunities", { method: "POST", body: JSON.stringify(data) }),
   update: (id: number, data: Record<string, unknown>) =>
-    request<import("./types").Opportunity>(`/api/opportunities/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    request<import("./types").Opportunity>(`/opportunities/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>(`/api/opportunities/${id}`, { method: "DELETE" }),
+    request<void>(`/opportunities/${id}`, { method: "DELETE" }),
 };
 
 // ── Planning ─────────────────────────────────────────────────────────────
@@ -136,10 +136,10 @@ export const planning = {
     limit?: number;
   }) =>
     request<import("./types").PlanningListResponse>(
-      `/api/opportunities/planning${qs(params || {})}`,
+      `/opportunities/planning${qs(params || {})}`,
     ),
   overview: () =>
-    request<import("./types").PlanningOverview>("/api/opportunities/planning/overview"),
+    request<import("./types").PlanningOverview>("/opportunities/planning/overview"),
   enriched: (params?: {
     horizon?: string;
     min_match_score?: number;
@@ -150,7 +150,7 @@ export const planning = {
     limit?: number;
   }) =>
     request<{ total: number; opportunities: import("./types").EnrichedPlanningItem[] }>(
-      `/api/opportunities/planning/enriched${qs(params || {})}`,
+      `/opportunities/planning/enriched${qs(params || {})}`,
     ),
 };
 
@@ -159,11 +159,11 @@ export const planning = {
 export const matching = {
   match: (profileId: number, opportunityId: number) =>
     request<import("./types").MatchResult>(
-      `/api/matching/profiles/${profileId}/opportunities/${opportunityId}`,
+      `/matching/profiles/${profileId}/opportunities/${opportunityId}`,
     ),
   ranked: (profileId: number, limit?: number) =>
     request<import("./types").RankedOpportunitiesResponse>(
-      `/api/matching/profiles/${profileId}/ranked${qs({ limit: limit || 20 })}`,
+      `/matching/profiles/${profileId}/ranked${qs({ limit: limit || 20 })}`,
     ),
 };
 
@@ -172,7 +172,7 @@ export const matching = {
 export const aiInsight = {
   get: (profileId: number, opportunityId: number) =>
     request<import("./types").OpportunityMatchInsightResponse>(
-      `/api/matching/profiles/${profileId}/opportunities/${opportunityId}/insight`,
+      `/matching/profiles/${profileId}/opportunities/${opportunityId}/insight`,
     ),
 };
 
@@ -180,21 +180,21 @@ export const aiInsight = {
 
 export const discovery = {
   sources: () =>
-    request<import("./types").SourceListResponse>("/api/discovery/sources"),
+    request<import("./types").SourceListResponse>("/discovery/sources"),
   sourcesMetadata: () =>
-    request<import("./types").SourceMetadataListResponse>("/api/discovery/sources/metadata"),
+    request<import("./types").SourceMetadataListResponse>("/discovery/sources/metadata"),
   sourceMetadata: (name: string) =>
-    request<import("./types").SourceMetadataInfo>(`/api/discovery/sources/${name}/metadata`),
+    request<import("./types").SourceMetadataInfo>(`/discovery/sources/${name}/metadata`),
   health: () =>
-    request<import("./types").DiscoveryHealthResponse>("/api/discovery/health"),
+    request<import("./types").DiscoveryHealthResponse>("/discovery/health"),
   run: (source: string) =>
-    request<import("./types").IngestionResult>(`/api/discovery/run/${source}`, {
+    request<import("./types").IngestionResult>(`/discovery/run/${source}`, {
       method: "POST",
     }),
   preview: (source: string) =>
-    request<import("./types").EnrichedDiscoveryResponse>(`/api/discovery/sources/${source}/preview`),
+    request<import("./types").EnrichedDiscoveryResponse>(`/discovery/sources/${source}/preview`),
   ingestRaw: (items: unknown[]) =>
-    request<import("./types").IngestionResult>("/api/discovery/run", {
+    request<import("./types").IngestionResult>("/discovery/run", {
       method: "POST",
       body: JSON.stringify(items),
     }),
@@ -211,43 +211,43 @@ export const outreach = {
     limit?: number;
   }) =>
     request<import("./types").DraftListResponse>(
-      `/api/outreach/drafts${qs(params || {})}`,
+      `/outreach/drafts${qs(params || {})}`,
     ),
   get: (id: number) =>
-    request<import("./types").DraftResponse>(`/api/outreach/drafts/${id}`),
+    request<import("./types").DraftResponse>(`/outreach/drafts/${id}`),
   create: (data: { profile_id: number; lead_id: number; opportunity_id: number; channel?: string }) =>
-    request<import("./types").DraftResponse>("/api/outreach/drafts", {
+    request<import("./types").DraftResponse>("/outreach/drafts", {
       method: "POST",
       body: JSON.stringify(data),
     }),
   update: (id: number, data: { subject?: string; body?: string }) =>
-    request<import("./types").DraftResponse>(`/api/outreach/drafts/${id}`, {
+    request<import("./types").DraftResponse>(`/outreach/drafts/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
   submit: (id: number) =>
     request<import("./types").DraftStateTransitionResponse>(
-      `/api/outreach/drafts/${id}/submit`,
+      `/outreach/drafts/${id}/submit`,
       { method: "POST" },
     ),
   approve: (id: number) =>
     request<import("./types").DraftStateTransitionResponse>(
-      `/api/outreach/drafts/${id}/approve`,
+      `/outreach/drafts/${id}/approve`,
       { method: "POST" },
     ),
   ready: (id: number) =>
     request<import("./types").DraftStateTransitionResponse>(
-      `/api/outreach/drafts/${id}/ready`,
+      `/outreach/drafts/${id}/ready`,
       { method: "POST" },
     ),
   send: (id: number) =>
     request<import("./types").SendDraftResponse>(
-      `/api/outreach/drafts/${id}/send`,
+      `/outreach/drafts/${id}/send`,
       { method: "POST" },
     ),
   reject: (id: number) =>
     request<import("./types").DraftStateTransitionResponse>(
-      `/api/outreach/drafts/${id}/reject`,
+      `/outreach/drafts/${id}/reject`,
       { method: "POST" },
     ),
 };
@@ -262,10 +262,10 @@ export const followups = {
     limit?: number;
   }) =>
     request<import("./types").FollowUpListResponse>(
-      `/api/follow-ups${qs(params || {})}`,
+      `/follow-ups${qs(params || {})}`,
     ),
   get: (id: number) =>
-    request<import("./types").FollowUp>(`/api/follow-ups/${id}`),
+    request<import("./types").FollowUp>(`/follow-ups/${id}`),
   create: (data: {
     lead_id: number;
     opportunity_id?: number;
@@ -273,43 +273,43 @@ export const followups = {
     scheduled_for: string;
     reason?: string;
   }) =>
-    request<import("./types").FollowUp>("/api/follow-ups", {
+    request<import("./types").FollowUp>("/follow-ups", {
       method: "POST",
       body: JSON.stringify(data),
     }),
   update: (id: number, data: { scheduled_for?: string; reason?: string }) =>
-    request<import("./types").FollowUp>(`/api/follow-ups/${id}`, {
+    request<import("./types").FollowUp>(`/follow-ups/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
   markDue: (id: number) =>
     request<import("./types").FollowUpStateTransitionResponse>(
-      `/api/follow-ups/${id}/mark-due`,
+      `/follow-ups/${id}/mark-due`,
       { method: "POST" },
     ),
   submit: (id: number) =>
     request<import("./types").FollowUpStateTransitionResponse>(
-      `/api/follow-ups/${id}/submit`,
+      `/follow-ups/${id}/submit`,
       { method: "POST" },
     ),
   approve: (id: number) =>
     request<import("./types").FollowUpStateTransitionResponse>(
-      `/api/follow-ups/${id}/approve`,
+      `/follow-ups/${id}/approve`,
       { method: "POST" },
     ),
   ready: (id: number) =>
     request<import("./types").FollowUpStateTransitionResponse>(
-      `/api/follow-ups/${id}/ready`,
+      `/follow-ups/${id}/ready`,
       { method: "POST" },
     ),
   complete: (id: number) =>
     request<import("./types").FollowUpStateTransitionResponse>(
-      `/api/follow-ups/${id}/complete`,
+      `/follow-ups/${id}/complete`,
       { method: "POST" },
     ),
   cancel: (id: number) =>
     request<import("./types").FollowUpStateTransitionResponse>(
-      `/api/follow-ups/${id}/cancel`,
+      `/follow-ups/${id}/cancel`,
       { method: "POST" },
     ),
 };
@@ -319,59 +319,59 @@ export const followups = {
 export const campaigns = {
   list: (params?: { status?: string; type?: string; limit?: number }) =>
     request<import("./types").CampaignListResponse>(
-      `/api/campaigns${qs(params || {})}`,
+      `/campaigns${qs(params || {})}`,
     ),
   get: (id: number) =>
-    request<import("./types").Campaign>(`/api/campaigns/${id}`),
+    request<import("./types").Campaign>(`/campaigns/${id}`),
   create: (data: { name: string; type: string; description?: string }) =>
-    request<import("./types").Campaign>("/api/campaigns", {
+    request<import("./types").Campaign>("/campaigns", {
       method: "POST",
       body: JSON.stringify(data),
     }),
   update: (id: number, data: Record<string, unknown>) =>
-    request<import("./types").Campaign>(`/api/campaigns/${id}`, {
+    request<import("./types").Campaign>(`/campaigns/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
   activate: (id: number) =>
-    request<import("./types").Campaign>(`/api/campaigns/${id}/activate`, { method: "POST" }),
+    request<import("./types").Campaign>(`/campaigns/${id}/activate`, { method: "POST" }),
   pause: (id: number) =>
-    request<import("./types").Campaign>(`/api/campaigns/${id}/pause`, { method: "POST" }),
+    request<import("./types").Campaign>(`/campaigns/${id}/pause`, { method: "POST" }),
   complete: (id: number) =>
-    request<import("./types").Campaign>(`/api/campaigns/${id}/complete`, { method: "POST" }),
+    request<import("./types").Campaign>(`/campaigns/${id}/complete`, { method: "POST" }),
   archive: (id: number) =>
-    request<import("./types").Campaign>(`/api/campaigns/${id}/archive`, { method: "POST" }),
+    request<import("./types").Campaign>(`/campaigns/${id}/archive`, { method: "POST" }),
   addOpportunity: (campaignId: number, opportunityId: number) =>
     request<{ campaign_id: number; opportunity_id: number; message: string }>(
-      `/api/campaigns/${campaignId}/opportunities/${opportunityId}`,
+      `/campaigns/${campaignId}/opportunities/${opportunityId}`,
       { method: "POST" },
     ),
   removeOpportunity: (campaignId: number, opportunityId: number) =>
     request<{ campaign_id: number; opportunity_id: number; message: string }>(
-      `/api/campaigns/${campaignId}/opportunities/${opportunityId}`,
+      `/campaigns/${campaignId}/opportunities/${opportunityId}`,
       { method: "DELETE" },
     ),
   listOpportunities: (id: number) =>
     request<{ campaign_id: number; total: number; opportunities: import("./types").CampaignOpportunityItem[] }>(
-      `/api/campaigns/${id}/opportunities`,
+      `/campaigns/${id}/opportunities`,
     ),
   summary: (id: number) =>
-    request<import("./types").CampaignSummary>(`/api/campaigns/${id}/summary`),
+    request<import("./types").CampaignSummary>(`/campaigns/${id}/summary`),
   enhancedSummary: (id: number) =>
-    request<import("./types").EnhancedCampaignSummary>(`/api/campaigns/${id}/enhanced-summary`),
+    request<import("./types").EnhancedCampaignSummary>(`/campaigns/${id}/enhanced-summary`),
   planning: (id: number, params?: { horizon?: string; min_match_score?: number }) =>
     request<{ campaign_id: number; campaign_name: string; total: number; opportunities: import("./types").CampaignPlanningItem[] }>(
-      `/api/campaigns/${id}/planning${qs(params || {})}`,
+      `/campaigns/${id}/planning${qs(params || {})}`,
     ),
   actionSummary: (id: number) =>
-    request<import("./types").CampaignActionSummary>(`/api/campaigns/${id}/action-summary`),
+    request<import("./types").CampaignActionSummary>(`/campaigns/${id}/action-summary`),
 };
 
 // ── Export ───────────────────────────────────────────────────────────────
 
 export const exports_ = {
   downloadUrl: (params?: import("./types").ExportFilterParams) => {
-    const base = `${BASE_URL}/api/exports/opportunities.xlsx`;
+    const base = `${BASE_URL}/exports/opportunities.xlsx`;
     const q = qs(params || {});
     return q ? `${base}${q}` : base;
   },
@@ -381,17 +381,17 @@ export const exports_ = {
 
 export const automation = {
   status: () =>
-    request<import("./types").AutomationConfig>("/api/automation/status"),
+    request<import("./types").AutomationConfig>("/automation/status"),
   config: () =>
-    request<import("./types").AutomationConfig>("/api/automation/config"),
+    request<import("./types").AutomationConfig>("/automation/config"),
   run: (params?: { dry_run?: boolean; source?: string }) =>
-    request<import("./types").AutomationRunResult>("/api/automation/run", {
+    request<import("./types").AutomationRunResult>("/automation/run", {
       method: "POST",
       body: JSON.stringify(params || {}),
     }),
   runs: (params?: { status?: string; trigger?: string; limit?: number; offset?: number }) =>
     request<import("./types").AutomationRunHistoryResponse>(
-      `/api/automation/runs${qs(params || {})}`,
+      `/automation/runs${qs(params || {})}`,
     ),
 };
 
@@ -399,50 +399,50 @@ export const automation = {
 
 export const applications = {
   list: (params?: { status?: string; opportunity_id?: number; limit?: number }) =>
-    request<import("./types").Application[]>(`/api/applications${qs(params || {})}`),
+    request<import("./types").Application[]>(`/applications${qs(params || {})}`),
   get: (id: number) =>
-    request<import("./types").ApplicationWith>(`/api/applications/${id}`),
+    request<import("./types").ApplicationWith>(`/applications/${id}`),
   create: (data: { opportunity_id: number; lead_id?: number; application_url?: string; notes?: string }) =>
-    request<import("./types").Application>("/api/applications", {
+    request<import("./types").Application>("/applications", {
       method: "POST",
       body: JSON.stringify(data),
     }),
   transitions: (id: number) =>
-    request<import("./types").ApplicationTransitions>(`/api/applications/${id}/transitions`),
+    request<import("./types").ApplicationTransitions>(`/applications/${id}/transitions`),
   transition: (id: number, action: string) =>
-    request<import("./types").Application>(`/api/applications/${id}/${action}`, { method: "POST" }),
+    request<import("./types").Application>(`/applications/${id}/${action}`, { method: "POST" }),
   analytics: () =>
-    request<import("./types").ApplicationAnalytics>("/api/applications/analytics/summary"),
+    request<import("./types").ApplicationAnalytics>("/applications/analytics/summary"),
 };
 
 // ── Actions ─────────────────────────────────────────────────────────────
 
 export const actions = {
   list: (params?: { status?: string; action_type?: string; priority?: string; limit?: number }) =>
-    request<import("./types").ActionItem[]>(`/api/actions${qs(params || {})}`),
+    request<import("./types").ActionItem[]>(`/actions${qs(params || {})}`),
   get: (id: number) =>
-    request<import("./types").ActionItem>(`/api/actions/${id}`),
+    request<import("./types").ActionItem>(`/actions/${id}`),
   summary: () =>
-    request<import("./types").ActionSummary>("/api/actions/summary"),
+    request<import("./types").ActionSummary>("/actions/summary"),
   generate: (dryRun?: boolean) => {
     const params = dryRun ? "?dry_run=true" : "";
-    return request<GenerateActionsResponse>(`/api/actions/generate${params}`,
+    return request<GenerateActionsResponse>(`/actions/generate${params}`,
       { method: "POST" },
     );
   },
   complete: (id: number) =>
-    request<import("./types").ActionItem>(`/api/actions/${id}/complete`, { method: "POST" }),
+    request<import("./types").ActionItem>(`/actions/${id}/complete`, { method: "POST" }),
   dismiss: (id: number) =>
-    request<import("./types").ActionItem>(`/api/actions/${id}/dismiss`, { method: "POST" }),
+    request<import("./types").ActionItem>(`/actions/${id}/dismiss`, { method: "POST" }),
   start: (id: number) =>
-    request<import("./types").ActionItem>(`/api/actions/${id}/start`, { method: "POST" }),
+    request<import("./types").ActionItem>(`/actions/${id}/start`, { method: "POST" }),
 };
 
 // ── Triage ──────────────────────────────────────────────────────────────
 
 export const triage = {
   get: (opportunityId: number) =>
-    request<import("./types").TriageResult>(`/api/opportunities/${opportunityId}/triage`),
+    request<import("./types").TriageResult>(`/opportunities/${opportunityId}/triage`),
 };
 
 // ── Dashboard / Command Center ────────────────────────────────────────
@@ -450,7 +450,7 @@ export const triage = {
 type CmdCenterResponse = import("./types").CommandCenterResponse;
 
 export const dashboard = {
-  overview: () => request<CmdCenterResponse>(`/api/dashboard/overview`),
+  overview: () => request<CmdCenterResponse>(`/dashboard/overview`),
 };
 
 // ── Timeline ────────────────────────────────────────────────────────────
@@ -459,7 +459,7 @@ type TimelineResp = import("./types").TimelineResponse;
 
 export const timeline = {
   get: (applicationId: number) =>
-    request<TimelineResp>(`/api/applications/${applicationId}/timeline`),
+    request<TimelineResp>(`/applications/${applicationId}/timeline`),
 };
 
 // ── Analytics Deep Dive ────────────────────────────────────────────────
@@ -474,10 +474,10 @@ export const analyticsDeep = {
     if (params?.start_date) qs.set("start_date", params.start_date);
     if (params?.end_date) qs.set("end_date", params.end_date);
     const query = qs.toString();
-    return request<AnalyticsDeepResp>(`/api/analytics/overview${query ? "?" + query : ""}`);
+    return request<AnalyticsDeepResp>(`/analytics/overview${query ? "?" + query : ""}`);
   },
   campaignDrilldown: (campaignId: number) =>
-    request<CampaignDrilldownResp>(`/api/analytics/campaigns/${campaignId}`),
+    request<CampaignDrilldownResp>(`/analytics/campaigns/${campaignId}`),
 };
 
 // ── Notifications / Attention ───────────────────────────────────────
@@ -493,20 +493,20 @@ export const notifications = {
     severity?: string;
     limit?: number;
   }) =>
-    request<NotificationItem[]>(`/api/notifications${qs(params || {})}`),
+    request<NotificationItem[]>(`/notifications${qs(params || {})}`),
   unreadCount: () =>
-    request<UnreadCountResponse>("/api/notifications/unread-count"),
+    request<UnreadCountResponse>("/notifications/unread-count"),
   markRead: (id: number) =>
     request<{ id: number; read_at: string | null }>(
-      `/api/notifications/${id}/read`,
+      `/notifications/${id}/read`,
       { method: "POST" },
     ),
   markAllRead: () =>
-    request<{ marked_read: number }>("/api/notifications/read-all", {
+    request<{ marked_read: number }>("/notifications/read-all", {
       method: "POST",
     }),
   sync: () =>
-    request<SyncResponse>("/api/notifications/sync", { method: "POST" }),
+    request<SyncResponse>("/notifications/sync", { method: "POST" }),
 };
 
 export { ApiError };

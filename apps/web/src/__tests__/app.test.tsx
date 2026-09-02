@@ -21,7 +21,7 @@ describe("API client", () => {
 
     await opportunities.list();
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/opportunities",
+      "http://localhost:8000/opportunities",
       expect.objectContaining({
         headers: { "Content-Type": "application/json" },
       }),
@@ -288,7 +288,7 @@ describe("Export", () => {
   it("generates correct download URL", async () => {
     const { exports_ } = await import("@/lib/api");
     const url = exports_.downloadUrl();
-    expect(url).toBe("http://localhost:8000/api/exports/opportunities.xlsx");
+    expect(url).toBe("http://localhost:8000/exports/opportunities.xlsx");
   });
 
   it("includes filter params in URL", async () => {
@@ -316,7 +316,7 @@ describe("Discovery", () => {
     const result = await discovery.sources();
     expect(result.sources).toEqual(["remotive", "arbeitnow"]);
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/discovery/sources",
+      "http://localhost:8000/discovery/sources",
       expect.anything(),
     );
   });
@@ -338,7 +338,7 @@ describe("Discovery", () => {
     const result = await discovery.run("remotive");
     expect(result.ingested).toBe(6);
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/discovery/run/remotive",
+      "http://localhost:8000/discovery/run/remotive",
       expect.objectContaining({ method: "POST" }),
     );
   });
