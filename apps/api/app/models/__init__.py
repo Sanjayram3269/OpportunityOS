@@ -1,4 +1,5 @@
 from app.models.application import Application, Action
+from app.models.application_event import ApplicationEvent
 from app.models.base import Base
 from app.models.campaign import Campaign
 from app.models.campaign_opportunity import CampaignOpportunity
@@ -31,4 +32,5 @@ __all__ = [
     "FollowUp",
     "Application",
     "Action",
+    "ApplicationEvent",
 ]

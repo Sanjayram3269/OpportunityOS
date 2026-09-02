@@ -732,3 +732,152 @@ export interface CommandCenterResponse {
   followups: FollowUpDashboardSection;
   analytics: AnalyticsSection;
 }
+
+// ── Application Timeline ─────────────────────────────────────────────
+
+export interface TimelineEvent {
+  id: number;
+  event_type: string;
+  from_status: string | null;
+  to_status: string;
+  label: string;
+  metadata: string | null;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface TimelineResponse {
+  application_id: number;
+  current_status: string;
+  events: TimelineEvent[];
+  total: number;
+}
+
+// ── Analytics Deep Dive ──────────────────────────────────────────────
+
+export interface OverviewAnalytics {
+  total_opportunities: number;
+  total_applications: number;
+  active_applications: number;
+  terminal_applications: number;
+  interviews: number;
+  offers: number;
+  interview_rate: number | null;
+  offer_rate: number | null;
+}
+
+export interface TrendPeriod {
+  current: number;
+  previous: number;
+  change: number;
+  change_pct: number | null;
+}
+
+export interface TrendsAnalytics {
+  period_start: string;
+  period_end: string;
+  period_days: number;
+  applications: TrendPeriod;
+  interviews: TrendPeriod;
+  offers: TrendPeriod;
+}
+
+export interface VelocityTransition {
+  count: number;
+  avg_days: number | null;
+  median_days: number | null;
+}
+
+export interface VelocityAnalytics {
+  transitions: Record<string, VelocityTransition>;
+}
+
+export interface ConversionStage {
+  stage: string;
+  count: number;
+  at_or_beyond: number;
+  conversion_rate: number | null;
+}
+
+export interface ConversionAnalytics {
+  stages: ConversionStage[];
+}
+
+export interface SourceAnalyticsItem {
+  company: string;
+  opportunities: number;
+  high_match: number;
+  applications: number;
+  interviews: number;
+  offers: number;
+  application_rate: number | null;
+  interview_rate: number | null;
+}
+
+export interface SourceAnalyticsResponse {
+  sources: SourceAnalyticsItem[];
+}
+
+export interface CampaignAnalyticsItem {
+  campaign_id: number;
+  campaign_name: string;
+  status: string;
+  opportunities: number;
+  high_match: number;
+  applications: number;
+  interviews: number;
+  offers: number;
+  application_rate: number | null;
+}
+
+export interface CampaignAnalyticsResponse {
+  campaigns: CampaignAnalyticsItem[];
+}
+
+export interface TypeAnalyticsItem {
+  type: string;
+  opportunities: number;
+  applications: number;
+  interviews: number;
+  offers: number;
+}
+
+export interface TypeAnalyticsResponse {
+  types: TypeAnalyticsItem[];
+}
+
+export interface MatchBucketItem {
+  bucket: string;
+  range: string;
+  opportunities: number;
+  applications: number;
+  interviews: number;
+  offers: number;
+  application_rate: number | null;
+}
+
+export interface MatchAnalyticsResponse {
+  buckets: MatchBucketItem[];
+}
+
+export interface Summer2027Analytics {
+  total: number;
+  high_match: number;
+  not_applied: number;
+  applications: number;
+  interviews: number;
+  offers: number;
+  active_campaigns: number;
+}
+
+export interface AnalyticsDeepResponse {
+  overview: OverviewAnalytics;
+  trends: TrendsAnalytics;
+  velocity: VelocityAnalytics;
+  conversion: ConversionAnalytics;
+  source_analytics: SourceAnalyticsResponse;
+  campaign_analytics: CampaignAnalyticsResponse;
+  type_analytics: TypeAnalyticsResponse;
+  match_analytics: MatchAnalyticsResponse;
+  summer_2027: Summer2027Analytics;
+}

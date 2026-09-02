@@ -127,6 +127,33 @@ def create_application_route(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/applications/{application_id}/timeline")
+def application_timeline(
+    application_id: int,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    """Get the timeline of events for an application.
+
+    Returns events in chronological order (oldest first).
+    Empty list if no events recorded yet — never fabricated.
+    """
+    from app.services.timeline import get_application_timeline
+
+    app = get_application(db, application_id)
+    if app is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    events = get_application_timeline(db, application_id, limit=limit, offset=offset)
+    return {
+        "application_id": application_id,
+        "current_status": app.status,
+        "events": events,
+        "total": len(events),
+    }
+
+
 @router.get("/applications/{application_id}")
 def get_application_route(
     application_id: int,

@@ -449,4 +449,27 @@ export const dashboard = {
   overview: () => request<CmdCenterResponse>(`/api/dashboard/overview`),
 };
 
+// ── Timeline ────────────────────────────────────────────────────────────
+
+type TimelineResp = import("./types").TimelineResponse;
+
+export const timeline = {
+  get: (applicationId: number) =>
+    request<TimelineResp>(`/api/applications/${applicationId}/timeline`),
+};
+
+// ── Analytics Deep Dive ────────────────────────────────────────────────
+
+type AnalyticsDeepResp = import("./types").AnalyticsDeepResponse;
+
+export const analyticsDeep = {
+  overview: (params?: { start_date?: string; end_date?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.start_date) qs.set("start_date", params.start_date);
+    if (params?.end_date) qs.set("end_date", params.end_date);
+    const query = qs.toString();
+    return request<AnalyticsDeepResp>(`/api/analytics/overview${query ? "?" + query : ""}`);
+  },
+};
+
 export { ApiError };

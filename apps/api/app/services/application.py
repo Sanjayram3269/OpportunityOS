@@ -25,6 +25,12 @@ from app.models.application import (
     Application,
     can_transition,
 )
+from app.models.application_event import (
+    EVENT_APPLICATION_CREATED,
+    EVENT_LABELS,
+    STATUS_TO_EVENT,
+    ApplicationEvent,
+)
 from app.models.company import Company
 from app.models.opportunity import Opportunity
 
@@ -69,6 +75,19 @@ def create_application(
     )
     db.add(app)
     db.flush()
+
+    # Create timeline event
+    event = ApplicationEvent(
+        application_id=app.id,
+        event_type=EVENT_APPLICATION_CREATED,
+        from_status=None,
+        to_status="NOT_APPLIED",
+        label=EVENT_LABELS[EVENT_APPLICATION_CREATED],
+        occurred_at=now,
+    )
+    db.add(event)
+    db.flush()
+
     return app
 
 
@@ -113,6 +132,21 @@ def transition_application(
         app.applied_at = now
 
     db.flush()
+
+    # Create timeline event
+    event_type = STATUS_TO_EVENT.get(new_status, "STATUS_CHANGED")
+    label = EVENT_LABELS.get(event_type, f"Status changed to {new_status}")
+    event = ApplicationEvent(
+        application_id=app.id,
+        event_type=event_type,
+        from_status=old_status,
+        to_status=new_status,
+        label=label,
+        occurred_at=now,
+    )
+    db.add(event)
+    db.flush()
+
     logger.info(
         "Application %d transitioned: %s → %s", application_id, old_status, new_status
     )
