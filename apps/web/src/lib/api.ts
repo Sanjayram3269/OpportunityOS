@@ -462,6 +462,8 @@ export const timeline = {
 
 type AnalyticsDeepResp = import("./types").AnalyticsDeepResponse;
 
+type CampaignDrilldownResp = import("./types").CampaignDrilldownResponse;
+
 export const analyticsDeep = {
   overview: (params?: { start_date?: string; end_date?: string }) => {
     const qs = new URLSearchParams();
@@ -470,6 +472,8 @@ export const analyticsDeep = {
     const query = qs.toString();
     return request<AnalyticsDeepResp>(`/api/analytics/overview${query ? "?" + query : ""}`);
   },
+  campaignDrilldown: (campaignId: number) =>
+    request<CampaignDrilldownResp>(`/api/analytics/campaigns/${campaignId}`),
 };
 
 export { ApiError };

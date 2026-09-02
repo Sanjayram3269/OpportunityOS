@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useApi } from "@/lib/hooks";
-import { planning, opportunities as oppsApi } from "@/lib/api";
+import { planning, opportunities as oppsApi, applications as applicationsApi } from "@/lib/api";
 import type { PlanningHorizonInfo, Opportunity } from "@/lib/types";
 import {
   Card,
@@ -22,6 +22,7 @@ import {
   PRIORITY_COLORS,
   OPPORTUNITY_TYPE_LABELS,
 } from "@/lib/types";
+import { ApplicationDetail } from "@/components/TimelineCard";
 
 export function OpportunitiesPage() {
   // Use the planning API which returns opportunity data + planning horizon
@@ -229,7 +230,12 @@ export function OpportunitiesPage() {
       )}
 
       {/* Detail panel */}
-      {selected && <OpportunityDetail oppId={selected.opportunity_id} onClose={() => setSelectedOpp(null)} />}
+      {selected && (
+        <OpportunityDetailWithTimeline
+          oppId={selected.opportunity_id}
+          onClose={() => setSelectedOpp(null)}
+        />
+      )}
     </div>
   );
 }
@@ -248,7 +254,7 @@ function HorizonBadge({ horizon }: { horizon: string }) {
   );
 }
 
-function OpportunityDetail({
+function OpportunityDetailWithTimeline({
   oppId,
   onClose,
 }: {
@@ -260,84 +266,98 @@ function OpportunityDetail({
     [oppId],
   );
 
+  // Check if an application exists for this opportunity
+  const { data: apps } = useApi(
+    () => applicationsApi.list({ opportunity_id: oppId, limit: 1 }),
+    [oppId],
+  );
+
+  const appId = apps && Array.isArray(apps) && apps.length > 0 ? apps[0].id : null;
+
   if (loading) return <Card className="p-4"><Spinner size="sm" /></Card>;
   if (!opp) return null;
 
   return (
-    <Card className="mt-4">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{opp.title}</h3>
-          <p className="text-sm text-gray-500">Opportunity #{opp.id}</p>
+    <div className="space-y-4">
+      {/* Opportunity detail */}
+      <Card className="mt-4">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{opp.title}</h3>
+            <p className="text-sm text-gray-500">Opportunity #{opp.id}</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            ✕ Close
+          </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          ✕ Close
-        </Button>
-      </div>
-      <div className="p-5 space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="text-gray-500">Type</span>
-            <div className="font-medium">{OPPORTUNITY_TYPE_LABELS[opp.type] || opp.type}</div>
-          </div>
-          <div>
-            <span className="text-gray-500">Status</span>
-            <div className="font-medium">{opp.status}</div>
-          </div>
-          <div>
-            <span className="text-gray-500">Priority</span>
-            <div className="font-medium">{opp.priority}</div>
-          </div>
-          <div>
-            <span className="text-gray-500">Score</span>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <ScoreBadge score={opp.match_score} />
+              <span className="text-gray-500">Type</span>
+              <div className="font-medium">{OPPORTUNITY_TYPE_LABELS[opp.type] || opp.type}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Status</span>
+              <div className="font-medium">{opp.status}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Priority</span>
+              <div className="font-medium">{opp.priority}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Score</span>
+              <div>
+                <ScoreBadge score={opp.match_score} />
+              </div>
+            </div>
+            <div>
+              <span className="text-gray-500">Deadline</span>
+              <div className="font-medium">
+                {opp.deadline ? new Date(opp.deadline).toLocaleDateString() : "—"}
+              </div>
+            </div>
+            <div>
+              <span className="text-gray-500">Company ID</span>
+              <div className="font-medium">{opp.company_id}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Lead ID</span>
+              <div className="font-medium">{opp.lead_id ?? "—"}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Created</span>
+              <div className="font-medium">
+                {new Date(opp.created_at).toLocaleDateString()}
+              </div>
             </div>
           </div>
-          <div>
-            <span className="text-gray-500">Deadline</span>
-            <div className="font-medium">
-              {opp.deadline ? new Date(opp.deadline).toLocaleDateString() : "—"}
+
+          {opp.description && (
+            <div>
+              <span className="text-sm text-gray-500">Description</span>
+              <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">
+                {opp.description}
+              </p>
             </div>
-          </div>
-          <div>
-            <span className="text-gray-500">Company ID</span>
-            <div className="font-medium">{opp.company_id}</div>
-          </div>
-          <div>
-            <span className="text-gray-500">Lead ID</span>
-            <div className="font-medium">{opp.lead_id ?? "—"}</div>
-          </div>
-          <div>
-            <span className="text-gray-500">Created</span>
-            <div className="font-medium">
-              {new Date(opp.created_at).toLocaleDateString()}
+          )}
+
+          {opp.source_url && (
+            <div>
+              <a
+                href={opp.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                View Source →
+              </a>
             </div>
-          </div>
+          )}
         </div>
+      </Card>
 
-        {opp.description && (
-          <div>
-            <span className="text-sm text-gray-500">Description</span>
-            <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">
-              {opp.description}
-            </p>
-          </div>
-        )}
-
-        {opp.source_url && (
-          <div>
-            <a
-              href={opp.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              View Source →
-            </a>
-          </div>
-        )}
-      </div>
-    </Card>
+      {/* Application Timeline (if application exists) */}
+      {appId && <ApplicationDetail applicationId={appId} onClose={() => {}} />}
+    </div>
   );
 }

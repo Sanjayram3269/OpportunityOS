@@ -28,6 +28,8 @@ from app.models.application_event import ApplicationEvent, EVENT_APPLICATION_SUB
 from app.models.campaign import Campaign
 from app.models.campaign_opportunity import CampaignOpportunity
 from app.models.company import Company
+from app.models.followup import FollowUp
+from app.models.message import Message
 from app.models.opportunity import Opportunity
 from app.services.planning import classify_horizon
 
@@ -658,4 +660,198 @@ def _get_summer_2027_analytics(db: Session, now: datetime) -> dict:
         "interviews": interview_count,
         "offers": offer_count,
         "active_campaigns": campaign_count,
+    }
+
+
+def get_campaign_drilldown(db: Session, campaign_id: int) -> dict:
+    """Deep analytics for a specific campaign.
+
+    Returns overview, conversion, activity, planning distribution,
+    and application status breakdown for the campaign's opportunities.
+    """
+    campaign = db.get(Campaign, campaign_id)
+    if campaign is None:
+        return {"error": "Campaign not found"}
+
+    now = datetime.now(timezone.utc)
+
+    # Get campaign opportunity IDs
+    opp_ids = [
+        row[0] for row in
+        db.query(CampaignOpportunity.opportunity_id)
+        .filter(CampaignOpportunity.campaign_id == campaign_id)
+        .all()
+    ]
+
+    total_opps = len(opp_ids)
+
+    if total_opps == 0:
+        return {
+            "campaign_id": campaign.id,
+            "campaign_name": campaign.name,
+            "campaign_status": campaign.status,
+            "overview": {
+                "total_opportunities": 0,
+                "high_match": 0,
+                "applications_started": 0,
+                "applications_submitted": 0,
+                "assessments": 0,
+                "interviews": 0,
+                "final_rounds": 0,
+                "offers": 0,
+                "accepted": 0,
+                "rejected": 0,
+                "withdrawn": 0,
+            },
+            "conversion": {
+                "application_rate": None,
+                "assessment_rate": None,
+                "interview_rate": None,
+                "offer_rate": None,
+                "acceptance_rate": None,
+            },
+            "activity": {
+                "open_actions": 0,
+                "overdue_actions": 0,
+                "outreach_pending_approval": 0,
+                "outreach_ready_to_send": 0,
+                "outreach_sent": 0,
+                "followups_due": 0,
+            },
+            "planning": {
+                "NOW": 0, "UPCOMING": 0, "SUMMER_2027": 0,
+                "FUTURE": 0, "UNKNOWN": 0,
+            },
+        }
+
+    # Overview — application status breakdown
+    app_status = dict(
+        db.query(Application.status, func.count(Application.id))
+        .filter(Application.opportunity_id.in_(opp_ids))
+        .group_by(Application.status)
+        .all()
+    )
+
+    high_match = (
+        db.query(func.count(Opportunity.id))
+        .filter(
+            Opportunity.id.in_(opp_ids),
+            Opportunity.match_score.isnot(None),
+            Opportunity.match_score >= 80,
+        )
+        .scalar()
+        or 0
+    )
+
+    # Count applications that have been submitted (APPLIED or beyond)
+    submitted_statuses = {"APPLIED", "ASSESSMENT", "INTERVIEW", "FINAL_ROUND", "OFFER", "ACCEPTED"}
+    apps_submitted = sum(app_status.get(s, 0) for s in submitted_statuses)
+    apps_started = sum(app_status.get(s, 0) for s in ("READY",) + tuple(submitted_statuses))
+
+    overview = {
+        "total_opportunities": total_opps,
+        "high_match": high_match,
+        "applications_started": apps_started,
+        "applications_submitted": apps_submitted,
+        "assessments": app_status.get("ASSESSMENT", 0),
+        "interviews": app_status.get("INTERVIEW", 0),
+        "final_rounds": app_status.get("FINAL_ROUND", 0),
+        "offers": app_status.get("OFFER", 0),
+        "accepted": app_status.get("ACCEPTED", 0),
+        "rejected": app_status.get("REJECTED", 0),
+        "withdrawn": app_status.get("WITHDRAWN", 0),
+    }
+
+    # Conversion rates
+    def safe_rate(num: int, denom: int) -> float | None:
+        if denom <= 0:
+            return None
+        return min(round(num / denom, 3), 1.0)
+
+    conversion = {
+        "application_rate": safe_rate(apps_started, total_opps),
+        "assessment_rate": safe_rate(app_status.get("ASSESSMENT", 0) + app_status.get("INTERVIEW", 0) + app_status.get("FINAL_ROUND", 0) + app_status.get("OFFER", 0) + app_status.get("ACCEPTED", 0), apps_submitted),
+        "interview_rate": safe_rate(app_status.get("INTERVIEW", 0) + app_status.get("FINAL_ROUND", 0), apps_submitted),
+        "offer_rate": safe_rate(app_status.get("OFFER", 0) + app_status.get("ACCEPTED", 0), apps_submitted),
+        "acceptance_rate": safe_rate(app_status.get("ACCEPTED", 0), app_status.get("OFFER", 0) + app_status.get("ACCEPTED", 0)),
+    }
+
+    # Activity: actions, outreach, follow-ups
+    from app.models.application import Action
+
+    open_actions = (
+        db.query(func.count(Action.id))
+        .filter(
+            Action.entity_type == "opportunity",
+            Action.entity_id.in_(opp_ids),
+            Action.status.in_(["OPEN", "IN_PROGRESS"]),
+        )
+        .scalar()
+        or 0
+    )
+    overdue_actions = (
+        db.query(func.count(Action.id))
+        .filter(
+            Action.entity_type == "opportunity",
+            Action.entity_id.in_(opp_ids),
+            Action.status.in_(["OPEN", "IN_PROGRESS"]),
+            Action.due_at.isnot(None),
+            Action.due_at < now,
+        )
+        .scalar()
+        or 0
+    )
+
+    # Outreach for campaign opportunities
+    msg_status = dict(
+        db.query(Message.status, func.count(Message.id))
+        .filter(Message.opportunity_id.in_(opp_ids))
+        .group_by(Message.status)
+        .all()
+    )
+
+    followup_due = (
+        db.query(func.count(FollowUp.id))
+        .filter(
+            FollowUp.opportunity_id.in_(opp_ids),
+            FollowUp.status.in_(["DUE", "PENDING_APPROVAL", "APPROVED", "READY_TO_SEND"]),
+        )
+        .scalar()
+        or 0
+    )
+
+    activity = {
+        "open_actions": open_actions,
+        "overdue_actions": overdue_actions,
+        "outreach_pending_approval": msg_status.get("PENDING_APPROVAL", 0),
+        "outreach_ready_to_send": msg_status.get("READY_TO_SEND", 0),
+        "outreach_sent": msg_status.get("SENT", 0),
+        "followups_due": followup_due,
+    }
+
+    # Planning horizon distribution
+    opps_in_campaign = [
+        db.get(Opportunity, oid) for oid in opp_ids
+    ]
+    opps_in_campaign = [o for o in opps_in_campaign if o is not None]
+
+    planning_dist: dict[str, int] = {}
+    for opp in opps_in_campaign:
+        hz = classify_horizon(opp.deadline, now)
+        planning_dist[hz] = planning_dist.get(hz, 0) + 1
+
+    return {
+        "campaign_id": campaign.id,
+        "campaign_name": campaign.name,
+        "campaign_status": campaign.status,
+        "overview": overview,
+        "conversion": conversion,
+        "activity": activity,
+        "planning": {
+            "NOW": planning_dist.get("NOW", 0),
+            "UPCOMING": planning_dist.get("UPCOMING", 0),
+            "SUMMER_2027": planning_dist.get("SUMMER_2027", 0),
+            "FUTURE": planning_dist.get("FUTURE", 0),
+            "UNKNOWN": planning_dist.get("UNKNOWN", 0),
+        },
     }

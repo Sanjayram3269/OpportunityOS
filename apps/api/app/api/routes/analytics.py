@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.services.analytics_deep import get_analytics_overview
+from app.services.analytics_deep import get_analytics_overview, get_campaign_drilldown
 
 router = APIRouter()
 
@@ -56,3 +56,15 @@ def analytics_overview(
         raise HTTPException(status_code=400, detail="start_date must be <= end_date")
 
     return get_analytics_overview(db, start_date=sd, end_date=ed)
+
+
+@router.get("/analytics/campaigns/{campaign_id}")
+def campaign_drilldown(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+):
+    """Deep analytics for a specific campaign."""
+    result = get_campaign_drilldown(db, campaign_id)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result

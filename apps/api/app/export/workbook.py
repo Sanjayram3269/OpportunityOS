@@ -159,6 +159,7 @@ def build_workbook(data: dict[str, Any]) -> BytesIO:
     _write_sheet(wb, "Interactions", *data.get("interactions", ([], [])))
     _write_sheet(wb, "Evidence", *data.get("evidence", ([], [])))
     _write_sheet(wb, "Campaigns", *data.get("campaigns", ([], [])))
+    _write_sheet(wb, "App Timeline", *data.get("application_timeline", ([], [])))
     _write_sheet(wb, "Summary", *data.get("summary", ([], [])))
 
     buf = BytesIO()

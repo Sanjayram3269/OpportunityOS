@@ -881,3 +881,54 @@ export interface AnalyticsDeepResponse {
   match_analytics: MatchAnalyticsResponse;
   summer_2027: Summer2027Analytics;
 }
+
+// ── Campaign Drill-Down ──────────────────────────────────────────────
+
+export interface CampaignDrilldownOverview {
+  total_opportunities: number;
+  high_match: number;
+  applications_started: number;
+  applications_submitted: number;
+  assessments: number;
+  interviews: number;
+  final_rounds: number;
+  offers: number;
+  accepted: number;
+  rejected: number;
+  withdrawn: number;
+}
+
+export interface CampaignDrilldownConversion {
+  application_rate: number | null;
+  assessment_rate: number | null;
+  interview_rate: number | null;
+  offer_rate: number | null;
+  acceptance_rate: number | null;
+}
+
+export interface CampaignDrilldownActivity {
+  open_actions: number;
+  overdue_actions: number;
+  outreach_pending_approval: number;
+  outreach_ready_to_send: number;
+  outreach_sent: number;
+  followups_due: number;
+}
+
+export interface CampaignDrilldownPlanning {
+  NOW: number;
+  UPCOMING: number;
+  SUMMER_2027: number;
+  FUTURE: number;
+  UNKNOWN: number;
+}
+
+export interface CampaignDrilldownResponse {
+  campaign_id: number;
+  campaign_name: string;
+  campaign_status: string;
+  overview: CampaignDrilldownOverview;
+  conversion: CampaignDrilldownConversion;
+  activity: CampaignDrilldownActivity;
+  planning: CampaignDrilldownPlanning;
+}

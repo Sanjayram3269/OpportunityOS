@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback } from "react";
 import { useApi } from "@/lib/hooks";
-import { campaigns } from "@/lib/api";
-import type { Campaign, EnhancedCampaignSummary, CampaignPlanningItem, CampaignActionSummary } from "@/lib/types";
+import { campaigns, analyticsDeep } from "@/lib/api";
+import type { Campaign, EnhancedCampaignSummary, CampaignPlanningItem, CampaignActionSummary, CampaignDrilldownResponse } from "@/lib/types";
 import {
   Card,
   CardHeader,
@@ -359,7 +359,125 @@ function CampaignCard({
           <div className="text-xs text-gray-400 mt-3">Loading planning data...</div>
         </div>
       )}
+
+      {/* Campaign Drill-Down Analytics */}
+      {isSelected && (
+        <CampaignDrillDown campaignId={campaign.id} />
+      )}
     </Card>
+  );
+}
+
+function CampaignDrillDown({ campaignId }: { campaignId: number }) {
+  const { data, loading } = useApi(
+    useCallback(() => analyticsDeep.campaignDrilldown(campaignId), [campaignId]),
+    [campaignId],
+  );
+
+  if (loading) return (
+    <div className="border-t border-gray-100 px-5 pb-4">
+      <div className="text-xs text-gray-400 mt-3">Loading analytics...</div>
+    </div>
+  );
+
+  if (!data) return null;
+
+  const dd = data as CampaignDrilldownResponse;
+  const { overview, conversion, activity, planning } = dd;
+
+  return (
+    <div className="border-t border-gray-100 px-5 pb-4 space-y-4 mt-3">
+      <h4 className="text-xs font-semibold text-gray-700">
+        Drill-Down Analytics
+      </h4>
+
+      {/* Overview KPIs */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+        <KPISmall label="Opps" value={overview.total_opportunities} />
+        <KPISmall label="High Match" value={overview.high_match} color="green" />
+        <KPISmall label="Applied" value={overview.applications_submitted} color="blue" />
+        <KPISmall label="Interviews" value={overview.interviews} color="amber" />
+        <KPISmall label="Offers" value={overview.offers} color="green" />
+        <KPISmall label="Rejected" value={overview.rejected} color="red" />
+      </div>
+
+      {/* Conversion rates */}
+      <div className="flex flex-wrap gap-3 text-xs">
+        <ConversionBadge label="Apply" rate={conversion.application_rate} />
+        <ConversionBadge label="Interview" rate={conversion.interview_rate} />
+        <ConversionBadge label="Offer" rate={conversion.offer_rate} />
+        <ConversionBadge label="Accept" rate={conversion.acceptance_rate} />
+      </div>
+
+      {/* Activity */}
+      {(activity.open_actions > 0 || activity.overdue_actions > 0 ||
+        activity.outreach_pending_approval > 0 || activity.followups_due > 0) && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {activity.overdue_actions > 0 && (
+            <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 font-medium">
+              {activity.overdue_actions} overdue
+            </span>
+          )}
+          {activity.outreach_pending_approval > 0 && (
+            <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700">
+              {activity.outreach_pending_approval} need approval
+            </span>
+          )}
+          {activity.followups_due > 0 && (
+            <span className="px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+              {activity.followups_due} follow-ups due
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Planning distribution */}
+      <div className="flex flex-wrap gap-1.5">
+        {Object.entries(planning).map(([horizon, count]) => (
+          count > 0 && (
+            <span
+              key={horizon}
+              className={`inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                HORIZON_COLORS[horizon as keyof typeof HORIZON_COLORS] || "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {horizon}: {count}
+            </span>
+          )
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KPISmall({ label, value, color = "gray" }: { label: string; value: number; color?: string }) {
+  const colors: Record<string, string> = {
+    gray: "text-gray-900",
+    green: "text-green-600",
+    blue: "text-blue-600",
+    amber: "text-amber-600",
+    red: "text-red-600",
+  };
+  return (
+    <div className="text-center">
+      <div className={`text-lg font-bold ${colors[color]}`}>{value}</div>
+      <div className="text-[10px] text-gray-500">{label}</div>
+    </div>
+  );
+}
+
+function ConversionBadge({ label, rate }: { label: string; rate: number | null }) {
+  if (rate === null) return (
+    <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-400">
+      {label}: —
+    </span>
+  );
+  const pct = (rate * 100).toFixed(0);
+  const color = rate >= 0.5 ? "bg-green-100 text-green-700" : rate >= 0.2 ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600";
+  return (
+    <span className={`px-2 py-0.5 rounded font-medium ${color}`}>
+      {label}: {pct}%
+    </span>
   );
 }
 

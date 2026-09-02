@@ -14,6 +14,8 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.models.application import Application
+from app.models.application_event import ApplicationEvent
 from app.models.campaign import Campaign
 from app.models.campaign_opportunity import CampaignOpportunity
 from app.models.company import Company
@@ -413,6 +415,74 @@ def _build_summary(db: Session) -> tuple[list[str], list[list[Any]]]:
 # ── Main export function ─────────────────────────────────────────────────
 
 
+def _build_application_events(db: Session) -> tuple[list[str], list[list[Any]]]:
+    """Build Application Timeline sheet data.
+
+    Joins ApplicationEvent with Application and Opportunity to provide
+    full context. Ordered by occurred_at ascending (chronological).
+    """
+    events = list(
+        db.query(ApplicationEvent)
+        .order_by(ApplicationEvent.occurred_at.asc())
+        .all()
+    )
+
+    if not events:
+        return [
+            "Application ID", "Opportunity", "Company", "Event Type",
+            "From Status", "To Status", "Label", "Occurred At",
+        ], []
+
+    # Batch-load related entities to avoid N+1
+    app_ids = list({e.application_id for e in events})
+    apps_map: dict[int, Application] = {}
+    if app_ids:
+        apps_list = list(
+            db.query(Application).filter(Application.id.in_(app_ids)).all()
+        )
+        apps_map = {a.id: a for a in apps_list}
+
+    opp_ids = list({a.opportunity_id for a in apps_map.values() if a.opportunity_id})
+    opps_map: dict[int, Opportunity] = {}
+    if opp_ids:
+        opps_list = list(
+            db.query(Opportunity).filter(Opportunity.id.in_(opp_ids)).all()
+        )
+        opps_map = {o.id: o for o in opps_list}
+
+    company_ids = list({o.company_id for o in opps_map.values() if o.company_id})
+    companies_map: dict[int, Company] = {}
+    if company_ids:
+        companies_list = list(
+            db.query(Company).filter(Company.id.in_(company_ids)).all()
+        )
+        companies_map = {c.id: c for c in companies_list}
+
+    headers = [
+        "Application ID", "Opportunity", "Company", "Event Type",
+        "From Status", "To Status", "Label", "Occurred At",
+    ]
+
+    rows: list[list[Any]] = []
+    for e in events:
+        app = apps_map.get(e.application_id)
+        opp = opps_map.get(app.opportunity_id) if app else None
+        company = companies_map.get(opp.company_id) if opp else None
+
+        rows.append([
+            e.application_id,
+            opp.title if opp else "",
+            company.name if company else "",
+            e.event_type,
+            e.from_status or "",
+            e.to_status,
+            e.label,
+            e.occurred_at,
+        ])
+
+    return headers, rows
+
+
 def build_export_data(
     db: Session,
     options: ExportOptions | None = None,
@@ -432,5 +502,6 @@ def build_export_data(
         "interactions": _build_interactions(db),
         "evidence": _build_evidence(db),
         "campaigns": _build_campaigns(db),
+        "application_timeline": _build_application_events(db),
         "summary": _build_summary(db),
     }
