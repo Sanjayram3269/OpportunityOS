@@ -606,3 +606,129 @@ export const OPPORTUNITY_TYPE_LABELS: Record<string, string> = {
   REFERRAL: "Referral",
   OTHER: "Other",
 };
+
+// ── Dashboard / Command Center ───────────────────────────────────────
+
+export interface OverviewSection {
+  total_opportunities: number;
+  total_applications: number;
+  open_actions: number;
+  total_actions: number;
+  total_campaigns: number;
+  active_campaigns: number;
+  high_match_opportunities: number;
+}
+
+export interface TodaySection {
+  overdue_actions: number;
+  due_today_actions: number;
+  p0_actions: number;
+  p1_actions: number;
+  overdue_deadlines: number;
+  deadlines_within_3_days: number;
+  due_followups: number;
+}
+
+export interface PipelineSection {
+  total: number;
+  by_status: Record<string, number>;
+  active_count: number;
+  terminal_count: number;
+  interviews: number;
+  offers: number;
+  interview_rate: number | null;
+  offer_rate: number | null;
+}
+
+export interface OpportunitySection {
+  total: number;
+  high_match: number;
+  scored: number;
+  average_match_score: number | null;
+  match_distribution: Record<string, number>;
+  by_type: Record<string, number>;
+  by_horizon: Record<string, number>;
+  with_deadline: number;
+  without_deadline: number;
+  not_applied: number;
+}
+
+export interface Summer2027Section {
+  total: number;
+  high_match: number;
+  not_applied: number;
+  applications: number;
+  application_status: Record<string, number>;
+  active_campaigns: number;
+}
+
+export interface CampaignDashboardInfo {
+  id: number;
+  name: string;
+  type: string | null;
+  opportunity_count: number;
+}
+
+export interface CampaignDashboardSection {
+  total: number;
+  by_status: Record<string, number>;
+  active_count: number;
+  total_campaign_opportunities: number;
+  active_campaigns: CampaignDashboardInfo[];
+}
+
+export interface OutreachDashboardSection {
+  total: number;
+  by_status: Record<string, number>;
+  drafts: number;
+  pending_approval: number;
+  approved: number;
+  ready_to_send: number;
+  sent: number;
+  approval_needed: number;
+}
+
+export interface FollowUpDashboardSection {
+  total: number;
+  by_status: Record<string, number>;
+  overdue: number;
+  pending: number;
+  completed: number;
+}
+
+export interface FunnelStage {
+  stage: string;
+  count: number;
+}
+
+export interface SourcePerformanceItem {
+  source: string;
+  opportunities: number;
+}
+
+export interface CampaignPerformanceItem {
+  campaign: string;
+  opportunities: number;
+}
+
+export interface AnalyticsSection {
+  application_funnel: FunnelStage[];
+  application_rate: number | null;
+  interview_rate: number | null;
+  offer_rate: number | null;
+  acceptance_rate: number | null;
+  source_performance: SourcePerformanceItem[];
+  campaign_performance: CampaignPerformanceItem[];
+}
+
+export interface CommandCenterResponse {
+  overview: OverviewSection;
+  today: TodaySection;
+  pipeline: PipelineSection;
+  opportunities: OpportunitySection;
+  summer_2027: Summer2027Section;
+  campaigns: CampaignDashboardSection;
+  outreach: OutreachDashboardSection;
+  followups: FollowUpDashboardSection;
+  analytics: AnalyticsSection;
+}

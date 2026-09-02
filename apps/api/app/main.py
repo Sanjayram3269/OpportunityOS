@@ -17,6 +17,7 @@ from app.api.routes.followups import router as followups_router
 from app.api.routes.outreach import router as outreach_router
 from app.api.routes.planning import router as planning_router
 from app.api.routes.planning_enhanced import router as planning_enhanced_router
+from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.profiles import router as profiles_router
 
 
@@ -62,3 +63,4 @@ app.include_router(campaigns_enhanced_router)
 app.include_router(exports_router)
 app.include_router(automation_router)
 app.include_router(planning_enhanced_router)
+app.include_router(dashboard_router)

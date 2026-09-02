@@ -441,4 +441,12 @@ export const triage = {
     request<import("./types").TriageResult>(`/api/opportunities/${opportunityId}/triage`),
 };
 
+// ── Dashboard / Command Center ────────────────────────────────────────
+
+type CmdCenterResponse = import("./types").CommandCenterResponse;
+
+export const dashboard = {
+  overview: () => request<CmdCenterResponse>(`/api/dashboard/overview`),
+};
+
 export { ApiError };
