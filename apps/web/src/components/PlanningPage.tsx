@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useApi } from "@/lib/hooks";
 import { planning } from "@/lib/api";
-import type { PlanningHorizonInfo } from "@/lib/types";
+import type { EnrichedPlanningItem } from "@/lib/types";
 import {
   Card,
   EmptyState,
   ErrorState,
   Spinner,
-  Badge,
   ScoreBadge,
   Select,
   SectionHeader,
@@ -17,7 +16,6 @@ import {
 import {
   HORIZON_COLORS,
   OPPORTUNITY_TYPE_LABELS,
-  PRIORITY_COLORS,
   type PlanningHorizon,
 } from "@/lib/types";
 
@@ -59,13 +57,36 @@ const HORIZON_CONFIG: {
   },
 ];
 
+const APPLICATION_STATUS_COLORS: Record<string, string> = {
+  NOT_APPLIED: "bg-gray-100 text-gray-600",
+  READY: "bg-blue-100 text-blue-700",
+  APPLIED: "bg-purple-100 text-purple-700",
+  ASSESSMENT: "bg-indigo-100 text-indigo-700",
+  INTERVIEW: "bg-amber-100 text-amber-800",
+  FINAL_ROUND: "bg-orange-100 text-orange-800",
+  OFFER: "bg-green-100 text-green-700",
+  ACCEPTED: "bg-emerald-100 text-emerald-700",
+  REJECTED: "bg-red-100 text-red-700",
+  WITHDRAWN: "bg-gray-100 text-gray-500",
+};
+
+const OUTREACH_STATUS_COLORS: Record<string, string> = {
+  NO_OUTREACH: "bg-gray-50 text-gray-400",
+  DRAFT: "bg-slate-100 text-slate-600",
+  PENDING_APPROVAL: "bg-amber-100 text-amber-700",
+  READY_TO_SEND: "bg-blue-100 text-blue-700",
+  SENT: "bg-emerald-100 text-emerald-700",
+};
+
 export function PlanningPage() {
-  const { data, loading, error, refetch } = useApi(
-    () => planning.list({ limit: 100 }),
-    [],
-  );
   const [horizonFilter, setHorizonFilter] = useState("");
   const [minScore, setMinScore] = useState("");
+  const [campaignFilter, setCampaignFilter] = useState<string>("");
+
+  const { data, loading, error, refetch } = useApi(
+    useCallback(() => planning.enriched({ limit: 100 }), []),
+    [],
+  );
 
   if (loading) return <Spinner />;
   if (error) return <ErrorState message={error} onRetry={refetch} />;
@@ -73,7 +94,7 @@ export function PlanningPage() {
   const allOpps = data?.opportunities || [];
 
   // Group by horizon
-  const grouped: Record<PlanningHorizon, PlanningHorizonInfo[]> = {
+  const grouped: Record<PlanningHorizon, EnrichedPlanningItem[]> = {
     NOW: [],
     UPCOMING: [],
     SUMMER_2027: [],
@@ -86,24 +107,67 @@ export function PlanningPage() {
     if (grouped[h]) grouped[h].push(opp);
   });
 
+  // Collect all unique campaign names for filter
+  const allCampaigns = new Set<string>();
+  allOpps.forEach((opp) => {
+    opp.campaigns?.forEach((c) => allCampaigns.add(c));
+  });
+
   // Filter
   const visibleHorizons = horizonFilter
     ? HORIZON_CONFIG.filter((h) => h.key === horizonFilter)
     : HORIZON_CONFIG;
 
-  const filterByScore = (opps: PlanningHorizonInfo[]) => {
-    if (!minScore) return opps;
-    const min = parseInt(minScore, 10);
-    return opps.filter((o) => (o.match_score || 0) >= min);
+  const filterByScore = (opps: EnrichedPlanningItem[]) => {
+    let filtered = opps;
+    if (minScore) {
+      const min = parseInt(minScore, 10);
+      filtered = filtered.filter((o) => (o.match_score || 0) >= min);
+    }
+    if (campaignFilter) {
+      filtered = filtered.filter((o) => o.campaigns?.includes(campaignFilter));
+    }
+    return filtered;
   };
+
+  // Summary stats
+  const totalNotApplied = allOpps.filter(
+    (o) => o.application_status === "NOT_APPLIED"
+  ).length;
+  const totalInInterview = allOpps.filter(
+    (o) => o.application_status === "INTERVIEW" || o.application_status === "FINAL_ROUND"
+  ).length;
+  const totalOffers = allOpps.filter(
+    (o) => o.application_status === "OFFER" || o.application_status === "ACCEPTED"
+  ).length;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Planning</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Organize opportunities by time horizon and priority
+          Organize opportunities by time horizon, application status, and priority
         </p>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-3">
+          <div className="text-2xl font-bold text-gray-900">{allOpps.length}</div>
+          <div className="text-xs text-gray-500">Total Opportunities</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-2xl font-bold text-blue-600">{totalNotApplied}</div>
+          <div className="text-xs text-gray-500">Not Applied</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-2xl font-bold text-amber-600">{totalInInterview}</div>
+          <div className="text-xs text-gray-500">In Interview</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-2xl font-bold text-green-600">{totalOffers}</div>
+          <div className="text-xs text-gray-500">Offers</div>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -119,6 +183,18 @@ export function PlanningPage() {
             placeholder="All horizons"
             className="w-48"
           />
+          {allCampaigns.size > 0 && (
+            <Select
+              value={campaignFilter}
+              onChange={setCampaignFilter}
+              options={Array.from(allCampaigns).map((c) => ({
+                label: c,
+                value: c,
+              }))}
+              placeholder="All campaigns"
+              className="w-48"
+            />
+          )}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Min score:</span>
             <input
@@ -152,6 +228,7 @@ export function PlanningPage() {
                 <p className="text-sm text-gray-500 text-center py-4">
                   No opportunities in this horizon
                   {minScore ? ` with score ≥ ${minScore}` : ""}
+                  {campaignFilter ? ` in campaign "${campaignFilter}"` : ""}
                 </p>
               </Card>
             ) : (
@@ -196,13 +273,21 @@ export function PlanningPage() {
   );
 }
 
-function PlanningRow({ opp }: { opp: PlanningHorizonInfo }) {
+function PlanningRow({ opp }: { opp: EnrichedPlanningItem }) {
   const horizonColor =
     HORIZON_COLORS[opp.planning_horizon as PlanningHorizon] ||
     "bg-gray-100 text-gray-600";
 
+  const appColor =
+    APPLICATION_STATUS_COLORS[opp.application_status] ||
+    "bg-gray-100 text-gray-600";
+
+  const outreachColor =
+    OUTREACH_STATUS_COLORS[opp.outreach_status] ||
+    "bg-gray-100 text-gray-600";
+
   return (
-    <div className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+    <div className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
       <ScoreBadge score={opp.match_score} />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-gray-900 truncate">
@@ -212,30 +297,61 @@ function PlanningRow({ opp }: { opp: PlanningHorizonInfo }) {
           {opp.company_name || "Unknown"} ·{" "}
           {OPPORTUNITY_TYPE_LABELS[opp.opportunity_type] || opp.opportunity_type}
         </div>
+        {/* Planning explanation */}
+        {opp.planning_explanation && (
+          <div className="text-[11px] text-gray-400 mt-0.5 truncate">
+            {opp.planning_explanation}
+          </div>
+        )}
       </div>
+
+      {/* Application status */}
+      <span
+        className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${appColor}`}
+      >
+        {opp.application_status.replace("_", " ")}
+      </span>
+
+      {/* Outreach status */}
+      {opp.outreach_status !== "NO_OUTREACH" && (
+        <span
+          className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${outreachColor}`}
+        >
+          {opp.outreach_status.replace("_", " ")}
+        </span>
+      )}
+
+      {/* Horizon */}
       <span
         className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${horizonColor}`}
       >
         {opp.planning_horizon}
       </span>
-      <span
-        className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${PRIORITY_COLORS[opp.priority] || "bg-gray-100 text-gray-600"}`}
-      >
-        Priority: {opp.planning_priority}
-      </span>
+
+      {/* Campaign badges */}
+      {opp.campaigns && opp.campaigns.length > 0 && (
+        <div className="hidden md:flex gap-1">
+          {opp.campaigns.slice(0, 2).map((c) => (
+            <span
+              key={c}
+              className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-indigo-50 text-indigo-600"
+            >
+              {c}
+            </span>
+          ))}
+          {opp.campaigns.length > 2 && (
+            <span className="text-[10px] text-gray-400">
+              +{opp.campaigns.length - 2}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Deadline */}
       {opp.deadline && (
         <span className="text-xs text-gray-400 whitespace-nowrap">
           Due {new Date(opp.deadline).toLocaleDateString()}
         </span>
-      )}
-      {opp.planning_priority_reasons.length > 0 && (
-        <div className="hidden lg:block">
-          {opp.planning_priority_reasons.slice(0, 2).map((r, i) => (
-            <div key={i} className="text-[10px] text-gray-400">
-              {r}
-            </div>
-          ))}
-        </div>
       )}
     </div>
   );

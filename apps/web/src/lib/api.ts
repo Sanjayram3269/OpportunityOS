@@ -138,6 +138,20 @@ export const planning = {
     request<import("./types").PlanningListResponse>(
       `/api/opportunities/planning${qs(params || {})}`,
     ),
+  overview: () =>
+    request<import("./types").PlanningOverview>("/api/opportunities/planning/overview"),
+  enriched: (params?: {
+    horizon?: string;
+    min_match_score?: number;
+    type?: string;
+    status?: string;
+    priority?: string;
+    campaign_id?: number;
+    limit?: number;
+  }) =>
+    request<{ total: number; opportunities: import("./types").EnrichedPlanningItem[] }>(
+      `/api/opportunities/planning/enriched${qs(params || {})}`,
+    ),
 };
 
 // ── Matching ─────────────────────────────────────────────────────────────
@@ -343,6 +357,14 @@ export const campaigns = {
     ),
   summary: (id: number) =>
     request<import("./types").CampaignSummary>(`/api/campaigns/${id}/summary`),
+  enhancedSummary: (id: number) =>
+    request<import("./types").EnhancedCampaignSummary>(`/api/campaigns/${id}/enhanced-summary`),
+  planning: (id: number, params?: { horizon?: string; min_match_score?: number }) =>
+    request<{ campaign_id: number; campaign_name: string; total: number; opportunities: import("./types").CampaignPlanningItem[] }>(
+      `/api/campaigns/${id}/planning${qs(params || {})}`,
+    ),
+  actionSummary: (id: number) =>
+    request<import("./types").CampaignActionSummary>(`/api/campaigns/${id}/action-summary`),
 };
 
 // ── Export ───────────────────────────────────────────────────────────────

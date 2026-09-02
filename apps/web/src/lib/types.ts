@@ -182,6 +182,66 @@ export interface CampaignSummary {
   followups_cancelled: number;
 }
 
+export interface EnhancedCampaignSummary extends CampaignSummary {
+  applications_started: number;
+  applications_submitted: number;
+  interviews: number;
+  offers: number;
+  rejections: number;
+  not_applied: number;
+  application_status_breakdown: Record<string, number>;
+  followups_overdue: number;
+  planning_horizon_distribution: Record<string, number>;
+}
+
+export interface CampaignPlanningItem {
+  opportunity_id: number;
+  title: string;
+  company_name: string | null;
+  opportunity_type: string;
+  status: string;
+  priority: string;
+  deadline: string | null;
+  match_score: number | null;
+  planning_horizon: string;
+  application_status: string;
+  other_campaigns: string[];
+}
+
+export interface CampaignActionSummary {
+  total_actions: number;
+  by_priority: Record<string, number>;
+  by_type: Record<string, number>;
+  overdue_actions: number;
+}
+
+export interface PlanningOverview {
+  total_opportunities: number;
+  total_applications: number;
+  not_applied: number;
+  average_match_score: number | null;
+  horizon_distribution: Record<string, number>;
+  type_distribution: Record<string, number>;
+  application_status_distribution: Record<string, number>;
+}
+
+export interface EnrichedPlanningItem {
+  opportunity_id: number;
+  title: string;
+  company_name: string | null;
+  opportunity_type: string;
+  status: string;
+  priority: string;
+  deadline: string | null;
+  match_score: number | null;
+  planning_horizon: string;
+  application_status: string;
+  outreach_status: string;
+  followup_status: string;
+  campaigns: string[];
+  planning_explanation: string;
+}
+
 export interface CampaignOpportunityItem {
   id: number;
   title: string;

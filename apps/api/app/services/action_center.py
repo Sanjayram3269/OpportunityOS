@@ -367,6 +367,9 @@ def _generate_opportunity_actions(
     db: Session, now: datetime, dry_run: bool
 ) -> list[Action]:
     """Generate actions for opportunities that need attention."""
+    from app.models.campaign_opportunity import CampaignOpportunity
+    from app.models.campaign import Campaign
+
     actions: list[Action] = []
 
     # Find opportunities with good match that haven't been applied to
@@ -425,12 +428,23 @@ def _generate_opportunity_actions(
                 now=now,
             )
 
+            # Get campaign context for this opportunity
+            campaign_names = []
+            camp_links = (
+                db.query(Campaign.name)
+                .join(CampaignOpportunity, CampaignOpportunity.campaign_id == Campaign.id)
+                .filter(CampaignOpportunity.opportunity_id == opp.id)
+                .all()
+            )
+            campaign_names = [c[0] for c in camp_links]
+
             description = _build_action_description(
                 action_type=action_type,
                 company_name=company_name,
                 opp=opp,
                 horizon=horizon,
                 deadline_bucket=deadline_bucket,
+                campaign_names=campaign_names,
             )
 
             action = Action(
@@ -672,8 +686,9 @@ def _build_action_description(
     opp: Opportunity,
     horizon: str,
     deadline_bucket: str,
+    campaign_names: list[str] | None = None,
 ) -> str:
-    """Build a descriptive string for an action."""
+    """Build a descriptive string for an action, with campaign context."""
     parts = [f"{company_name} — {opp.title}"]
     if horizon == HORIZON_SUMMER_2027:
         parts.append("Summer 2027")
@@ -681,6 +696,8 @@ def _build_action_description(
         parts.append(f"Deadline {deadline_bucket.replace('_', ' ').lower()}")
     if opp.match_score is not None:
         parts.append(f"Match: {opp.match_score}/100")
+    if campaign_names:
+        parts.append(f"Campaign: {', '.join(campaign_names[:2])}")
     return ". ".join(parts)
 
 
