@@ -26,6 +26,10 @@ class ProfileFeatures:
     bio: str | None = None
     headline_skills: set[str] = field(default_factory=set)
     bio_skills: set[str] = field(default_factory=set)
+    preferred_role_types: str | None = None
+    preferred_cities: str | None = None
+    geographic_preference: str | None = None
+    current_city: str | None = None
 
     @property
     def all_skills(self) -> set[str]:
@@ -116,6 +120,12 @@ def extract_profile_features(
     if profile.bio:
         features.bio = profile.bio
         features.bio_skills = extract_skills_from_text(profile.bio)
+
+    # ── Profile preferences for matching ────────────────────────────
+    features.preferred_role_types = profile.preferred_role_types
+    features.preferred_cities = profile.preferred_cities
+    features.geographic_preference = profile.geographic_preference
+    features.current_city = profile.current_city
 
     return features
 

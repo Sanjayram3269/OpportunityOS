@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/opportunities", label: "Opportunities", icon: "🎯" },
   { href: "/discover", label: "Discover", icon: "🔍" },
   { href: "/planning", label: "Planning", icon: "📅" },
+  { href: "/profile", label: "Profile", icon: "👤" },
   { href: "/outreach", label: "Outreach", icon: "✉️" },
   { href: "/follow-ups", label: "Follow-ups", icon: "🔔" },
   { href: "/campaigns", label: "Campaigns", icon: "📁" },
@@ -91,10 +92,9 @@ export function Sidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100 ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100 ${isActive
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"`
                 }`}
               >
                 <span className="text-base">{item.icon}</span>

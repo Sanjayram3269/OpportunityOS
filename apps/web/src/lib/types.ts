@@ -15,6 +15,20 @@ export interface Profile {
   bio: string | null;
   created_at: string;
   updated_at: string;
+  current_city: string | null;
+  preferred_cities: string | null;
+  geographic_preference: string | null;
+  degree: string | null;
+  field_of_study: string | null;
+  institution: string | null;
+  graduation_year: number | null;
+  skills_summary: string | null;
+  preferred_role_types: string | null;
+  minimum_compensation: string | null;
+  availability_start: number | null;
+  availability_end: number | null;
+  work_arrangement: string | null;
+  notable_achievements: string | null;
 }
 
 // ── Company ──────────────────────────────────────────────────────────────

@@ -361,7 +361,11 @@ def score_match(
         result.matched_signals.append("Your projects demonstrate relevant technologies")
 
     # ── Location fit (0–10) ───────────────────────────────────────
-    loc_score = _location_compatible(None, opp_features.location)
+    # Use profile current city / geographic preference for location matching
+    loc_score = _location_compatible(
+        getattr(profile_features, "current_city", None),
+        opp_features.location,
+    )
     result.location_fit_score = loc_score
     if loc_score >= 8:
         result.matched_signals.append(f"Location compatible: {opp_features.location or 'flexible'}")
@@ -369,7 +373,11 @@ def score_match(
         result.concerns.append(f"Location may not align: {opp_features.location}")
 
     # ── Type fit (0–5) ────────────────────────────────────────────
-    type_score = _type_fit_score(profile_type_preference, opp_features.type)
+    # Use profile preference for type matching
+    type_score = _type_fit_score(
+        getattr(profile_features, "preferred_role_types", None),
+        opp_features.type,
+    )
     result.type_fit_score = type_score
 
     # ── Total score ───────────────────────────────────────────────

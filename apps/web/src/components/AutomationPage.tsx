@@ -20,7 +20,6 @@ import {
   KPICard,
   SectionHeader,
 } from "@/components/ui";
-
 export default function AutomationPage() {
   const {
     data: config,
@@ -138,7 +137,7 @@ export default function AutomationPage() {
             <ConfigToggle label="AI Insights" enabled={config.ai_insights_enabled} />
             <ConfigToggle label="Outreach Drafts" enabled={config.outreach_drafts_enabled} />
             <ConfigToggle label="Follow-up Processing" enabled={config.followup_processing_enabled} />
-            <ConfigToggle label="Dry Run Default" enabled={config.dry_run_default} />
+            <ConfigToggle label="Dry-run Default" enabled={config.dry_run_default} />
           </div>
           <div className="mt-4">
             <p className="text-xs text-gray-500">
@@ -149,6 +148,9 @@ export default function AutomationPage() {
             </p>
             <p className="text-xs text-gray-500">
               Max drafts per run: {config.max_drafts_per_run}
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              The table above is the live runtime view from the backend, including the dry-run default. Sources, intervals, and feature flags still require environment variables; the Run Now / Dry Run buttons only affect the next run.
             </p>
           </div>
         </CardContent>
@@ -200,7 +202,6 @@ function ConfigToggle({ label, enabled }: { label: string; enabled: boolean }) {
     </div>
   );
 }
-
 function RunResultCard({ result }: { result: AutomationRunResult }) {
   return (
     <Card>

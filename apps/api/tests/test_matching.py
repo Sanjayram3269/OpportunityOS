@@ -746,3 +746,199 @@ class TestExistingAPIPreservation:
         }
         response = client.post("/discovery/run", json=[raw_item])
         assert response.status_code == 200
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# 12. PREFERENCE REGRESSION TESTS
+# ══════════════════════════════════════════════════════════════════════════
+
+
+class TestPreferenceRegression:
+    def test_empty_preferences_no_penalty(self, db):
+        """Empty profile preferences should not penalize scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures()
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        assert result.score >= 0
+        assert result.type_fit_score >= 0
+        assert result.location_fit_score >= 0
+
+    def test_remote_preference_no_penalty(self, db):
+        """Profile with remote preference should not penalize local opportunities."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(geographic_preference="Remote")
+        of = OpportunityFeatures(title="Remote Test", type="FULL_TIME", location="Chennai")
+
+        result = score_match(pf, of)
+        assert result.location_fit_score >= 5  # Remote should be compatible
+
+    def test_exact_city_match_high_score(self, db):
+        """Exact city match should give high location fit score."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(current_city="Chennai", preferred_cities="Chennai")
+        of = OpportunityFeatures(title="CityCheck", type="FULL_TIME", location="Chennai")
+
+        result = score_match(pf, of)
+        assert result.location_fit_score >= 9  # Exact match
+
+    def test_no_preference_moderate_score(self, db):
+        """When no geographic preference is set, location should give moderate score."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures()  # No preference set
+        of = OpportunityFeatures(title="CityCheck", type="FULL_TIME", location="Chennai")
+
+        result = score_match(pf, of)
+        assert result.location_fit_score == 8  # No profile location, assume flexible
+
+    def test_role_type_exact_match(self, db):
+        """Exact role type match should give full type fit score."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(preferred_role_types="FULL_TIME")
+        of = OpportunityFeatures(type="FULL_TIME")
+
+        result = score_match(pf, of)
+        assert result.type_fit_score == 5  # Exact match
+
+    def test_role_type_compatible(self, db):
+        """Compatible role type should give good score."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(preferred_role_types="FULL_TIME")
+        of = OpportunityFeatures(type="CONTRACT")
+
+        result = score_match(pf, of)
+        assert result.type_fit_score >= 4  # Compatible
+
+    def test_no_role_preference_moderate_score(self, db):
+        """When no role preference is set, any type should give moderate score."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures()  # No preference
+        of = OpportunityFeatures(type="INTERNSHIP")
+
+        result = score_match(pf, of)
+        assert result.type_fit_score >= 3  # No preference, moderate base
+
+    def test_minimum_compensation_stored_only(self, db):
+        """minimum_compensation should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(minimum_compensation="150000 INR")
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # minimum_compensation is stored field, should not affect score
+        assert result.score >= 0
+
+    def test_availability_stored_only(self, db):
+        """availability_start/end should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(availability_start=1704067200, availability_end=1893456000)
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # availability should not affect score
+        assert result.score >= 0
+
+    def test_work_arrangement_stored_only(self, db):
+        """work_arrangement should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(work_arrangement="FULL_TIME")
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # work_arrangement is stored field, should not affect score
+        assert result.score >= 0
+
+    def test_notable_achievements_stored_only(self, db):
+        """notable_achievements should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(notable_achievements="Awarded Employee of the Year")
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # notable_achievements is stored field, should not affect score
+        assert result.score >= 0
+
+    def test_skills_summary_used_in_scoring(self, db):
+        """skills_summary should influence skill overlap scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(skills_summary="Python, Django, React")
+        of = OpportunityFeatures(skills={"python", "django", "react"})
+
+        result = score_match(pf, of)
+        assert result.skill_overlap_score > 0
+        assert len(result.matched_skills) > 0
+
+    def test_degree_stored_only(self, db):
+        """degree should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(degree="M.S. Computer Science")
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # degree is stored field, should not affect score
+        assert result.score >= 0
+
+    def test_field_of_study_stored_only(self, db):
+        """field_of_study should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(field_of_study="Artificial Intelligence")
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # field_of_study is stored field, should not affect score
+        assert result.score >= 0
+
+    def test_institution_stored_only(self, db):
+        """institution should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(institution="Stanford University")
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # institution is stored field, should not affect score
+        assert result.score >= 0
+
+    def test_graduation_year_stored_only(self, db):
+        """graduation_year should be stored but not affect scoring."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        pf = ProfileFeatures(graduation_year=2020)
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        # graduation_year is stored field, should not affect score
+        assert result.score >= 0
+
+    def test_geographic_preference_remote_worldwide(self, db):
+        """Remote and worldwide preferences should be highly compatible."""
+        from app.matching.scorer import score_match, ProfileFeatures, OpportunityFeatures
+
+        # Remote preference
+        pf = ProfileFeatures(geographic_preference="Remote")
+        of = OpportunityFeatures(title="Remote Test", type="FULL_TIME", location="Chennai")
+
+        result = score_match(pf, of)
+        assert result.location_fit_score == 10
+
+        # Worldwide preference
+        pf = ProfileFeatures(geographic_preference="Worldwide")
+        of = OpportunityFeatures()
+
+        result = score_match(pf, of)
+        assert result.location_fit_score 

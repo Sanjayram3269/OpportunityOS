@@ -14,17 +14,27 @@ def create_profile(
         name=profile_data.name,
         email=str(profile_data.email),
         phone=profile_data.phone,
-        linkedin_url=str(profile_data.linkedin_url)
-        if profile_data.linkedin_url
-        else None,
-        github_url=str(profile_data.github_url)
-        if profile_data.github_url
-        else None,
-        portfolio_url=str(profile_data.portfolio_url)
-        if profile_data.portfolio_url
-        else None,
+        linkedin_url=str(profile_data.linkedin_url) if profile_data.linkedin_url else None,
+        github_url=str(profile_data.github_url) if profile_data.github_url else None,
+        portfolio_url=str(profile_data.portfolio_url) if profile_data.portfolio_url else None,
         headline=profile_data.headline,
         bio=profile_data.bio,
+
+        # ── New fields ─────────────────────────────────────────────
+        current_city=profile_data.current_city,
+        preferred_cities=profile_data.preferred_cities,
+        geographic_preference=profile_data.geographic_preference,
+        degree=profile_data.degree,
+        field_of_study=profile_data.field_of_study,
+        institution=profile_data.institution,
+        graduation_year=profile_data.graduation_year,
+        skills_summary=profile_data.skills_summary,
+        preferred_role_types=profile_data.preferred_role_types,
+        minimum_compensation=profile_data.minimum_compensation,
+        availability_start=profile_data.availability_start,
+        availability_end=profile_data.availability_end,
+        work_arrangement=profile_data.work_arrangement,
+        notable_achievements=profile_data.notable_achievements,
     )
 
     db.add(profile)

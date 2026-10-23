@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg-binary
+pydantic[email]
+pydantic-settings
+python-dotenv
+httpx
+openpyxl
+pytest
+pytest-asyncio
