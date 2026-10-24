@@ -7,11 +7,11 @@ import sys
 import time
 import uuid
 from contextlib import asynccontextmanager
-
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.deps import require_auth
 from app.core.config import get_settings
 
 # ── Logging configuration ────────────────────────────────────────────────
@@ -83,10 +83,26 @@ app = FastAPI(
     title="OpportunityOS API",
     version="0.1.0",
     lifespan=lifespan,
-    # In production, disable detailed docs
+    # In production, disable detailed docs and the public API schema
     docs_url="/docs" if settings.is_development else None,
     redoc_url="/redoc" if settings.is_development else None,
+    openapi_url="/openapi.json" if settings.is_development else None,
 )
+
+# ── Authentication ──────────────────────────────────────────────────
+
+if settings.api_auth_token:
+    logger.info("Authentication enabled: bearer token required for all API routes")
+else:
+    logger.warning(
+        "API_AUTH_TOKEN is not set — every protected route will return 503. "
+        "Set API_AUTH_TOKEN before serving traffic."
+    )
+
+# Every business router is protected by require_auth (fail-closed bearer
+# token). Only /health and /health/ready below stay public for load
+# balancer probes.
+AUTH = [Depends(require_auth)]
 
 # ── CORS ─────────────────────────────────────────────────────────────────
 
@@ -203,22 +219,22 @@ from app.api.routes.analytics import router as analytics_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.profiles import router as profiles_router
 
-app.include_router(profiles_router)
-app.include_router(companies_router)
-app.include_router(leads_router)
-app.include_router(planning_router)  # Before opportunities to avoid /opportunities/planning vs /{id} conflict
-app.include_router(applications_router)
-app.include_router(opportunities_router)
-app.include_router(discovery_router)
-app.include_router(matching_router)
-app.include_router(ai_insight_router)
-app.include_router(outreach_router)
-app.include_router(followups_router)
-app.include_router(campaigns_router)
-app.include_router(campaigns_enhanced_router)
-app.include_router(exports_router)
-app.include_router(automation_router)
-app.include_router(planning_enhanced_router)
-app.include_router(analytics_router)
-app.include_router(dashboard_router)
-app.include_router(notifications_router)
+app.include_router(profiles_router, dependencies=AUTH)
+app.include_router(companies_router, dependencies=AUTH)
+app.include_router(leads_router, dependencies=AUTH)
+app.include_router(planning_router, dependencies=AUTH)  # Before opportunities to avoid /opportunities/planning vs /{id} conflict
+app.include_router(applications_router, dependencies=AUTH)
+app.include_router(opportunities_router, dependencies=AUTH)
+app.include_router(discovery_router, dependencies=AUTH)
+app.include_router(matching_router, dependencies=AUTH)
+app.include_router(ai_insight_router, dependencies=AUTH)
+app.include_router(outreach_router, dependencies=AUTH)
+app.include_router(followups_router, dependencies=AUTH)
+app.include_router(campaigns_router, dependencies=AUTH)
+app.include_router(campaigns_enhanced_router, dependencies=AUTH)
+app.include_router(exports_router, dependencies=AUTH)
+app.include_router(automation_router, dependencies=AUTH)
+app.include_router(planning_enhanced_router, dependencies=AUTH)
+app.include_router(analytics_router, dependencies=AUTH)
+app.include_router(dashboard_router, dependencies=AUTH)
+app.include_router(notifications_router, dependencies=AUTH)

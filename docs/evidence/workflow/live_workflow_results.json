@@ -1,0 +1,316 @@
+{
+  "passed": 62,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "A1 session unauthenticated before login",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "A2 login succeeds",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "A3 session cookie is HttpOnly + SameSite=Lax + Secure",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "A4 login response body contains no token",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "A5 session authenticated after login",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "A6 unauthenticated BFF call rejected 401",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "A7 unauthenticated write rejected 401",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "A8 cross-site write rejected 403 (CSRF)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "B1 demo profile reused from a previous run",
+      "status": "PASS",
+      "detail": "id=5726, HTTP 200"
+    },
+    {
+      "name": "B2 profile persisted across reload (skills round-trip)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "B3 profile persisted (geographic preference)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "B4 duplicate profile rejected 409 (no dupes on resubmit)",
+      "status": "PASS",
+      "detail": "HTTP 409"
+    },
+    {
+      "name": "B5 exactly one demo profile exists",
+      "status": "PASS",
+      "detail": "demo profiles=1, total=1"
+    },
+    {
+      "name": "C1 discovery health endpoint responds",
+      "status": "PASS",
+      "detail": "status=healthy, active=['arbeitnow', 'himalayas', 'remotive']"
+    },
+    {
+      "name": "C2 automation run (discovery+matching+planning) completes",
+      "status": "PASS",
+      "detail": "2.9s, status=COMPLETED"
+    },
+    {
+      "name": "C3 at least one real external source succeeded",
+      "status": "PASS",
+      "detail": "remotive: raw=9 ingested=0 err=[]; arbeitnow: raw=300 ingested=0 err=[]; himalayas: raw=20 ingested=0 err=[]"
+    },
+    {
+      "name": "C4 opportunities ingested or verified from live sources",
+      "status": "PASS",
+      "detail": "created=0, deduped=322"
+    },
+    {
+      "name": "C5 ingested opportunities visible via API",
+      "status": "PASS",
+      "detail": "count=324"
+    },
+    {
+      "name": "C6 unknown source fails gracefully (no 5xx)",
+      "status": "PASS",
+      "detail": "HTTP 200, errors=[\"Unknown source: 'not-a-real-source'. Available sources: arbeitnow, handshake, himalayas, jobstep, linkedin, remotive\"]"
+    },
+    {
+      "name": "C7 auth-required stub source fails gracefully",
+      "status": "PASS",
+      "detail": "errors=[\"Source 'linkedin' requires authorized integration\"]"
+    },
+    {
+      "name": "C8 re-run deduplicates every known opportunity",
+      "status": "PASS",
+      "detail": "deduped=322, created=0 (new live listings), re-ingested=0"
+    },
+    {
+      "name": "C9 no duplicate opportunities after re-run",
+      "status": "PASS",
+      "detail": "324 -> 324 opportunities, 0 duplicate source_urls"
+    },
+    {
+      "name": "D1 ranked matches returned",
+      "status": "PASS",
+      "detail": "total=324"
+    },
+    {
+      "name": "D2 all opportunities carry an integer score",
+      "status": "PASS",
+      "detail": "100/100"
+    },
+    {
+      "name": "D3 top match has explanation text",
+      "status": "PASS",
+      "detail": "'Moderate match. with 4 shared skills. (1 concern).'"
+    },
+    {
+      "name": "D4 top match has component score breakdown",
+      "status": "PASS",
+      "detail": "{\"skill_overlap_score\": 25, \"title_relevance_score\": 8, \"location_fit_score\": 10, \"type_fit_score\": 5}"
+    },
+    {
+      "name": "D5 results sorted by score descending",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "D6 scores within 0-100",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "D7 stored opportunity scores populated (automation)",
+      "status": "PASS",
+      "detail": "scored=324/324"
+    },
+    {
+      "name": "D8 scoring is deterministic (identical on repeat)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "E1 profile preferences updated",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "E2 live re-ranking responds to preference change",
+      "status": "PASS",
+      "detail": "top score 48 -> 31"
+    },
+    {
+      "name": "E3 preferences restored",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "E4 scores restored after preference restore",
+      "status": "PASS",
+      "detail": "48 -> 48"
+    },
+    {
+      "name": "F1 planning list returns data",
+      "status": "PASS",
+      "detail": "total=5"
+    },
+    {
+      "name": "F2 planning item has horizon + priority + score",
+      "status": "PASS",
+      "detail": "{\"planning_horizon\": \"NOW\", \"planning_priority\": 74, \"match_score\": 46}"
+    },
+    {
+      "name": "F3 min_match_score filter works",
+      "status": "PASS",
+      "detail": "100 items with score>=1"
+    },
+    {
+      "name": "F4 limit/pagination parameter respected",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "F5 XLSX export streams through BFF",
+      "status": "PASS",
+      "detail": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    {
+      "name": "G1 synthetic company reused from a previous run",
+      "status": "PASS",
+      "detail": "id=29280"
+    },
+    {
+      "name": "G2 synthetic lead reused from a previous run",
+      "status": "PASS",
+      "detail": "id=9725"
+    },
+    {
+      "name": "G3 draft generated (template fallback, no AI key)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "G4 draft starts in DRAFT status",
+      "status": "PASS",
+      "detail": "DRAFT"
+    },
+    {
+      "name": "G5 draft body is personalized (mentions skills or title)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "G6 send from DRAFT rejected 409 (approval required)",
+      "status": "PASS",
+      "detail": "HTTP 409"
+    },
+    {
+      "name": "G7 approve from DRAFT rejected 409 (must submit first)",
+      "status": "PASS",
+      "detail": "HTTP 409"
+    },
+    {
+      "name": "G8 ready-from-DRAFT rejected 409",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "G9 submit DRAFT->PENDING_APPROVAL",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "G10 approve PENDING_APPROVAL->APPROVED",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "G11 ready APPROVED->READY_TO_SEND",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "G12 send without email provider fails safely (no real email)",
+      "status": "PASS",
+      "detail": "success=False, error='Email provider not configured'"
+    },
+    {
+      "name": "G13 failed send leaves draft READY_TO_SEND (not SENT)",
+      "status": "PASS",
+      "detail": "READY_TO_SEND"
+    },
+    {
+      "name": "G14 no messages in SENT state anywhere",
+      "status": "PASS",
+      "detail": "total=0"
+    },
+    {
+      "name": "H1 dashboard overview responds",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "H2 action items generated",
+      "status": "PASS",
+      "detail": "count=4"
+    },
+    {
+      "name": "H3 notifications synced",
+      "status": "PASS",
+      "detail": "count=8"
+    },
+    {
+      "name": "H4 analytics overview responds",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "H5 automation run history persisted",
+      "status": "PASS",
+      "detail": "total=8"
+    },
+    {
+      "name": "H6 action generation is idempotent (2nd run adds nothing)",
+      "status": "PASS",
+      "detail": "5 -> 5"
+    },
+    {
+      "name": "I1 opportunity status update works",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "I2 status restored",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "J1 forged/expired session rejected 401",
+      "status": "PASS",
+      "detail": ""
+    }
+  ]
+}

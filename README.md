@@ -1,7 +1,7 @@
 # OpportunityOS
 
 <p align="center">
-  <strong>Your AI-powered operating system for finding, evaluating, and acting on opportunities.</strong>
+  <strong>Your operating system for finding, evaluating, and acting on opportunities.</strong>
   <br />
   <em>One place to discover opportunities, understand their fit, prepare your next move, and manage the entire journey.</em>
 </p>
@@ -11,6 +11,7 @@
   <img alt="Next.js" src="https://img.shields.io/badge/Frontend-Next.js-black?logo=next.js" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Ready-3178C6?logo=typescript&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/Database-PostgreSQL-4169E1?logo=postgresql&logoColor=white" />
+  <img alt="Tests" src="https://img.shields.io/badge/Backend_tests-1232_passed-brightgreen" />
   <img alt="Status" src="https://img.shields.io/badge/Status-Active%20Development-orange" />
 </p>
 
@@ -22,7 +23,7 @@ Opportunities are scattered across job boards, company career pages, research pr
 
 **OpportunityOS turns that fragmented work into one structured, explainable workflow.**
 
-It is being built as a personal opportunity command center—not merely a job scraper or a spreadsheet. The goal is to help a person move from *“I might be interested in this”* to *“I understand it, know why it fits, have a plan, and know what to do next.”*
+It is a personal opportunity command center—not a job scraper or a spreadsheet. It takes you from *“I might be interested in this”* to *“I understand it, know why it fits, have a plan, and know what to do next.”*
 
 ## Product vision
 
@@ -42,11 +43,23 @@ AUTHORIZED ACTION → TRACK
 FOLLOW UP → ANALYZE → LEARN
 ```
 
-The intended experience is simple: define what matters to you, let OpportunityOS organize and evaluate relevant opportunities, review its recommendations, and keep every application, conversation, and next action in one place.
+Define what matters to you, let OpportunityOS organize and evaluate relevant opportunities, review its recommendations, and keep every application, conversation, and next action in one place.
+
+## Screenshots
+
+Real data from the running application — full set and context in [docs/evidence/screenshots](docs/evidence/screenshots/README.md).
+
+| Command Center | Planning by horizon |
+|---|---|
+| ![Overview dashboard](docs/evidence/screenshots/01-overview-dashboard.png) | ![Planning horizons](docs/evidence/screenshots/04-planning-horizons.png) |
+
+| Ranked opportunities | Automation run history |
+|---|---|
+| ![Opportunities](docs/evidence/screenshots/02-opportunities-ranked.png) | ![Automation](docs/evidence/screenshots/03-automation-run-history.png) |
 
 ## What kinds of opportunities?
 
-OpportunityOS is designed around a broad opportunity model. It should not be limited to a single job board, location, role, or season.
+OpportunityOS is built around a broad opportunity model, not limited to a single job board, location, role, or season.
 
 - **Careers:** internships, graduate roles, full-time roles, startups, and product-company positions.
 - **Research:** research internships, labs, academic programs, and collaborations.
@@ -54,65 +67,100 @@ OpportunityOS is designed around a broad opportunity model. It should not be lim
 - **Growth:** hackathons, fellowships, competitions, communities, and relevant collaborations.
 - **Networking:** referrals, hiring-team outreach, founder conversations, and professional follow-ups.
 
-Targeting is intended to be configurable: India-first, city-specific, remote, or worldwide when relevant. Timing can balance immediate opportunities with future cycles such as Summer 2027. A future target should not hide a strong opportunity available now.
+Targeting is configurable: India-first, city-specific, remote, or worldwide. Timing can balance immediate opportunities with future cycles such as Summer 2027 without hiding a strong opportunity available now.
 
 ## Current capabilities
 
-The repository already contains a substantial working foundation. The list below describes implemented workflow areas; it does **not** imply every future integration or end-term feature is already available.
+Implemented, tested, and verified — every row below is exercised by the automated suites and the live end-to-end workflow described in [Verification](#verification).
 
 | Area | Current foundation |
 |---|---|
-| Opportunity discovery | Pluggable source-adapter architecture, with Remotive, Arbeitnow, and Himalayas adapters |
-| Normalization & deduplication | Converts source records into a consistent opportunity model and avoids repeated ingestion |
-| Company association | Connects discovered opportunities to company records |
-| Matching | Deterministic, explainable match scoring with supporting signals, matched skills, gaps, and concerns |
-| Optional AI insights | Structured opportunity insights that complement—not replace—the deterministic matching result |
-| Planning | Deadline-aware planning horizons, including Summer 2027 |
+| Opportunity discovery | Pluggable source-adapter architecture, with Remotive, Arbeitnow, and Himalayas adapters fetching live data |
+| Normalization & deduplication | Consistent opportunity model; external-ID-first dedup verified idempotent on re-ingestion (322 listings, 0 duplicates) |
+| Company association | Discovered opportunities linked to company records |
+| Matching | Deterministic, explainable 0–100 scoring with matched skills, gaps, and concerns; profile preferences move scores as expected |
+| Optional AI insights | Structured insights that complement—not replace—the deterministic matching result |
+| Planning | Deadline-aware horizons (NOW / UPCOMING / SUMMER_2027 / FUTURE / UNKNOWN), separate from match score |
 | Applications | Application lifecycle, transitions, and chronological timeline events |
-| Action Center | Generates prioritized, idempotent actions from the current opportunity workflow |
-| Outreach | Drafting and explicit approval states, with configured email delivery paths |
+| Action Center | Prioritized, idempotent action generation from current workflow state |
+| Outreach | Draft → pending → approved → ready → sent lifecycle; nothing sends without explicit human approval |
 | Follow-ups | Follow-up lifecycle, due handling, and timezone-aware scheduling |
-| Campaigns | Groups and organizes opportunities for focused activity |
-| Notifications | Persistent attention items, unread state, and idempotent synchronization |
-| Automation | Orchestrates discovery, matching, planning, follow-ups, actions, and notifications |
-| Run history | Persists automation run status and summary metrics |
-| Analytics | Opportunity and application analytics, conversion views, trends, and campaign drill-down |
-| Export | Workbook export for portable reporting |
-| Operational foundation | FastAPI health/readiness endpoints, structured logging, environment configuration, and PostgreSQL migrations |
+| Campaigns | Grouping and organization for focused activity |
+| Notifications | Persistent attention items, unread state, idempotent synchronization |
+| Automation | Orchestrates discovery, matching, planning, follow-ups, actions, and notifications on a configurable schedule |
+| Run history | Persisted run status, durations, and summary metrics |
+| Analytics | Opportunity and application analytics, conversion views, trends, campaign drill-down |
+| Export | Excel workbook export for portable reporting |
+| Security | Token-gated API, BFF proxy with session cookies, CSRF Origin checks, rate-limited login — see [Security architecture](#security-architecture) |
+| Operations | Health/readiness endpoints, structured logging, environment configuration, PostgreSQL migrations |
 
 ### Current source integrations
-
-The current discovery adapters are:
 
 - **Remotive**
 - **Arbeitnow**
 - **Himalayas**
 
-Other platforms and sources—including LinkedIn, Handshake, and JobStep—must be treated as **planned or access-dependent** until their specific authorized integration path is verified. Listing a platform in the product roadmap does not mean a live connector currently exists.
+Other platforms—including LinkedIn, Handshake, and JobStep—are **planned or access-dependent** until an authorized integration path is verified. Listing a platform in the roadmap does not mean a live connector exists.
 
 ## Human control is a product principle
 
-OpportunityOS is designed to automate the work around a decision while preserving a clear and auditable boundary around external actions.
+OpportunityOS automates the work around a decision while preserving a clear, auditable boundary around external actions.
 
-**Automate where appropriate:** discovery from supported sources, normalization, deduplication, matching, prioritization, company research from legitimate sources, drafting, reminders, status tracking, and analytics.
+**Automated:** discovery from supported sources, normalization, deduplication, matching, prioritization, drafting, reminders, status tracking, analytics.
 
-**Keep control explicit:** review generated content, approve consequential actions, and use only authorized sending or submission mechanisms. If a platform does not provide permitted access for an action, the product should present a prepared handoff rather than simulate authorization.
+**Always human:** reviewing generated content, approving consequential actions, sending. The scheduler performs internal intelligence only — it never sends email, submits applications, or approves outreach. Every approval gate is enforced server-side, and outreach send is fail-closed when no email provider is configured.
 
-The project does not aim to bypass platform restrictions, scrape services without permission, harvest private contact data, or send automated messages through unauthorized browser bots. Credentials and session cookies should never be embedded in source code.
+The project does not bypass platform restrictions, scrape services without permission, harvest private contact data, or send messages through unauthorized bots. Credentials are never embedded in source code.
+
+## Security architecture
+
+```text
+Browser ── HttpOnly session cookie ──> Next.js BFF (/api/bff/*) ── Bearer token ──> FastAPI
+         (never sees any token)        (allowlist + CSRF + auth)   (fail-closed auth)
+```
+
+- The FastAPI bearer token exists **only server-side**; it is in no bundle, no localStorage, no network response. A value-level scan of the production bundle confirms zero secret values ship to clients ([evidence](docs/evidence/reports/bundle_secret_scan.txt)).
+- Sign-in exchanges a pasted token (rate-limited, constant-time comparison) for an **HttpOnly, SameSite=Lax, Secure-in-production** HMAC-signed session cookie.
+- The BFF proxies an explicit path+method **allowlist** only; unknown paths are rejected before any network call, and the upstream origin is fixed (no open proxy).
+- State-changing requests require an `Origin` allowlist match (CSRF), on top of the SameSite cookie.
+- **Fail closed everywhere:** missing secrets cause explicit 503s, never fallback defaults. In production, `/docs`, `/redoc` and `/openapi.json` are disabled.
+
+The system is intentionally **single-user**: anyone who signs in has full owner access. See [docs/evidence/LIMITATIONS.md](docs/evidence/LIMITATIONS.md) and [DEPLOY.md](DEPLOY.md) for the full threat model and limitations.
+
+## Verification
+
+Every number comes from a real run; raw outputs are committed under [docs/evidence/reports](docs/evidence/reports/).
+
+| Gate | Result |
+|---|---|
+| Backend test suite (pytest) | **1232 passed** — isolated test database, fail-loud guard, real migrations per run |
+| Frontend test suite (vitest) | **93 passed** across 5 suites |
+| Lint / types / build | eslint clean, `tsc --noEmit` clean, production build succeeds |
+| Dependency audit | **0 vulnerabilities** |
+| Bundle secret scan | **0 secret values** in client bundle |
+| Live end-to-end workflow (nothing mocked) | **62/62 checks** — BFF → FastAPI → PostgreSQL → live external job sources |
+
+The live workflow test drives the real stack over HTTP: session login and cookie flags, live discovery ingestion, dedup on re-run, deterministic scoring, preference-driven rescoring, planning horizons, outreach lifecycle with approval gates, automation run history, action-generation idempotency, and 401 on forged sessions. See [docs/evidence/VERIFICATION.md](docs/evidence/VERIFICATION.md).
 
 ## Architecture
-
-OpportunityOS uses a monorepo structure with a web application, API, and infrastructure configuration.
 
 ```text
 OpportunityOS/
 ├── apps/
 │   ├── api/       # FastAPI backend, domain services, schemas, migrations and tests
-│   └── web/       # Next.js frontend, TypeScript UI and API client
+│   └── web/       # Next.js frontend, BFF proxy layer, TypeScript UI and API client
 ├── infra/
 │   └── postgres/  # Local PostgreSQL infrastructure
-├── DEPLOY.md      # Deployment and operational guidance
+├── docs/
+│   └── evidence/  # Verification reports, live-workflow evidence, limitations, screenshots
+├── DEPLOY.md      # Deployment guide with production checklist
 └── README.md
+```
+
+```text
+Browser ⇄ Next.js (BFF: allowlist proxy + session cookies) ⇄ FastAPI ⇄ PostgreSQL
+                                                          ↑
+                                                Alembic (migrations)
 ```
 
 ### Technology
@@ -131,152 +179,123 @@ OpportunityOS/
 
 ### Architectural principles
 
-1. **PostgreSQL is the source of truth.** Excel is an export/reporting format, not a competing database.
-2. **Domain rules stay deterministic where correctness matters.** AI can explain and recommend; it must not secretly override lifecycle states, approvals, verified facts, or permissions.
-3. **Source adapters are replaceable.** Each provider should be normalized into canonical domain records rather than creating a separate business system.
+1. **PostgreSQL is the source of truth.** Excel is an export format, not a competing database.
+2. **Domain rules stay deterministic where correctness matters.** AI can explain and recommend; it must not override lifecycle states, approvals, verified facts, or permissions.
+3. **Source adapters are replaceable.** Each provider is normalized into canonical domain records.
 4. **Lifecycle changes are explicit and traceable.** Applications, outreach, follow-ups, notifications, and automation runs have structured states.
-5. **Idempotency matters.** Repeated ingestion, action generation, and notification synchronization should not create duplicate work.
-6. **Failure should be observable.** Operational endpoints, logs, and persistent automation-run summaries support troubleshooting.
-7. **Secrets stay out of Git.** Runtime configuration belongs in local environment files or deployment secrets.
+5. **Idempotency matters.** Repeated ingestion, action generation, and notification sync do not create duplicate work — verified in tests.
+6. **Failure is observable.** Health endpoints, structured logs, and persistent run summaries support troubleshooting.
+7. **Secrets stay out of Git.** Runtime configuration lives in ignored local environment files or deployment secrets.
+8. **Tests never touch real data.** The suite runs against a dedicated database with a fail-loud isolation guard.
 
 ## The end-term product
 
-The roadmap is to evolve the current foundation into a personalized opportunity agent with the following capabilities.
+Roadmap goals — not claims that all are implemented today.
 
-### 1. Personal profile and preferences
-A canonical profile for education, skills, experience, projects, achievements, GitHub, LinkedIn, portfolio links, resumes, cover-letter material, location, availability, compensation preferences, and target roles. User-provided facts should remain editable and distinguishable from inferred information.
-
-### 2. Opportunity targeting
-Configurable priorities for role families, cities, remote/on-site preferences, compensation, work authorization, experience requirements, timing, company stage, and industries. For example, a user can prioritize paid, on-site Chennai opportunities available in December while keeping Summer 2027 as a major long-term goal.
-
-### 3. Company and contact intelligence
-Research companies using legitimate public information and authorized sources. Track the source and confidence for facts such as company website, careers page, founders, recruiting channels, and publicly listed contact details. Unknown or unverified information should remain marked as such.
-
-### 4. Application preparation
-Recommend the most relevant resume variant, suggest evidence-backed edits, draft a role-specific cover letter, and prepare answers to application questions from the user's real experience. The system must not invent qualifications, employment, achievements, or skills.
-
-### 5. Personalized outreach
-Draft distinct, contextual messages for recruiters, hiring managers, founders, or official recruiting email addresses where those contact routes are legitimately available. Track approvals, delivery outcomes, responses, and follow-up tasks.
-
-### 6. Daily attention and mobile access
-A concise daily brief showing new matches, urgent deadlines, pending approvals, interviews, and follow-ups. A responsive web experience and eventual installable PWA can make review and notifications useful on a phone.
-
-### 7. Learning from outcomes
-Measure which sources, role types, match signals, applications, and outreach patterns lead to replies or interviews. User decisions should inform transparent, adjustable preferences—not an opaque scoring system.
-
-These are **roadmap goals, not claims that all functionality is implemented today**. The roadmap should be delivered in tested, dependency-ordered milestones.
+1. **Personal profile and preferences** — canonical, editable education, skills, experience, projects, documents, and targeting preferences (foundation: profile model with preference columns and preference-driven scoring exists).
+2. **Opportunity targeting** — first-class role, location, compensation, work-authorization, and timing preferences.
+3. **Company and contact intelligence** — research from legitimate public sources with source provenance and verification states; unknowns stay marked unknown.
+4. **Application preparation** — recommend resume variants, suggest evidence-backed edits, draft role-specific material from the user's real experience. Never invent qualifications.
+5. **Personalized outreach** — distinct contextual drafts for recruiters, hiring managers, founders; tracked approvals and outcomes.
+6. **Daily attention and mobile access** — concise daily brief; responsive web and installable PWA.
+7. **Learning from outcomes** — measure which sources, signals, and patterns lead to replies; inform transparent, adjustable preferences.
 
 ## Development status and roadmap
 
-The project is actively evolving. The near-term sequence is:
+1. ~~Repository audit~~ — **done**: [docs/COMPLETION_AND_DEPLOYMENT_AUDIT.md](docs/COMPLETION_AND_DEPLOYMENT_AUDIT.md) plus the verified hardening pass recorded in [docs/evidence](docs/evidence/).
+2. **Preference and targeting engine** — deepen role, location, compensation, and timing preferences beyond the current foundation.
+3. **Company/contact intelligence** — source provenance and verification states.
+4. **Application and outreach preparation** — connect profile evidence to tailored drafts and human review.
+5. **Source integrations** — only connectors with a legitimate, supportable access path.
+6. **Product-wide UI/UX pass** — consistent typography, forms, empty/error/loading states, accessibility, mobile layout.
+7. **Production readiness** — execute the [DEPLOY.md](DEPLOY.md) checklist: TLS, secrets, backups with tested restore, observability.
 
-1. **Complete repository audit** — verify each workflow, capture known issues, and produce a prioritized gap register.
-2. **Personal profile foundation** — establish a canonical, editable source of professional facts and documents.
-3. **Preference and targeting engine** — make role, location, compensation, and timing preferences first-class.
-4. **Company/contact intelligence** — add source provenance and verification states.
-5. **Application and outreach preparation** — connect profile evidence to tailored drafts and human review.
-6. **Source integrations** — implement only connectors with a legitimate, supportable access path.
-7. **Product-wide UI/UX pass** — consistent typography, navigation, forms, empty/error/loading states, accessible components, and mobile layout.
-8. **Production readiness** — deployment, secrets management, backups, observability, and a real-world validation cycle.
-
-Feature status will be updated as milestones are completed and verified. Planned work should not be presented as shipped functionality.
+Planned work is never presented as shipped functionality.
 
 ## Local development
 
-### Prerequisites
+Quick start; full detail in [DEPLOY.md](DEPLOY.md).
 
-- Git
-- Python compatible with the API project's configuration
-- Node.js and npm compatible with the web project's configuration
-- Docker Desktop / Docker Compose
-
-### 1. Clone the repository
+**Prerequisites:** Git, Python 3.12+, Node.js 18+, Docker.
 
 ```bash
 git clone https://github.com/Sanjayram3269/OpportunityOS.git
 cd OpportunityOS
-```
 
-### 2. Start PostgreSQL
+# 1. PostgreSQL
+cd infra/postgres && cp .env.example .env   # set POSTGRES_PASSWORD
+docker compose up -d && cd ../..
 
-Review the Compose configuration under `infra/postgres/`. Create the local environment file required by that Compose configuration, using non-production development values only, then start the service:
+# 2. API
+cd apps/api
+python -m venv .venv && .venv/Scripts/activate   # Windows; use source .venv/bin/activate elsewhere
+pip install -r requirements.txt
+cp .env.example .env    # set DATABASE_URL and API_AUTH_TOKEN
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
 
-```bash
-cd infra/postgres
-docker compose up -d
-```
-
-### 3. Configure and start the API
-
-Create the API environment file using the project's example/configuration guidance. Never commit credentials or production secrets.
-
-From `apps/api`, install the dependencies according to the repository's Python project configuration, apply migrations, and start the development server. The usual local entry point is:
-
-```bash
-python -m alembic upgrade head
-python -m uvicorn app.main:app --reload
-```
-
-The API's health and readiness endpoints are available at `/health` and `/health/ready` once the server is running. Consult `apps/api/` and [DEPLOY.md](DEPLOY.md) for the exact environment and dependency setup.
-
-### 4. Configure and start the web application
-
-Set the web app's local environment variable `NEXT_PUBLIC_API_BASE_URL` to the API base URL, install dependencies from `apps/web`, and run:
-
-```bash
+# 3. Web
+cd apps/web
 npm install
+cp .env.example .env.local   # set API_BASE_URL, API_AUTH_TOKEN, BFF_LOGIN_TOKEN, SESSION_SECRET
 npm run dev
 ```
 
-The local web app typically runs at `http://localhost:3000`, and the API at `http://localhost:8000`. Confirm the configured ports and environment values for your machine.
+Then open **http://localhost:3000/login** and paste your `BFF_LOGIN_TOKEN`. The API listens on `http://localhost:8000` (`/health`, `/health/ready`, `/docs` in dev).
 
-> **Local setup note:** use the committed project configuration as the authority for exact Python versions, scripts, and environment variable requirements. Keep real API keys, SMTP credentials, passwords, personal documents, and tokens in ignored local environment files or a deployment secret store.
+> The browser never holds API credentials — all API traffic goes through the Next.js BFF, which attaches them server-side. There are no `NEXT_PUBLIC_*` secrets by design. Generate secrets with the commands in [DEPLOY.md](DEPLOY.md) and keep them out of Git.
 
-## Testing and engineering workflow
+## Testing
 
-OpportunityOS is developed in small vertical milestones:
+```bash
+# Backend (needs PostgreSQL running; creates its own isolated test database)
+cd apps/api && python -m pytest -q          # expect: 1232 passed
 
-1. Inspect existing architecture and working tree.
-2. Make one coherent, scoped change.
-3. Add or update tests for expected behavior and failure cases.
-4. Run the relevant API tests, frontend tests, type checks, and migration checks.
-5. Review security and authorization boundaries.
-6. Record the outcome, commit the verified milestone, and proceed to the next dependency.
+# Frontend
+cd apps/web && npm test                     # expect: 93 passed
+npx tsc --noEmit && npx eslint .            # expect: clean
 
-A green unit-test suite does not substitute for external API access verification or a real end-to-end run against correctly configured services. Keep these checks distinct in release notes.
+# Live end-to-end workflow (both servers running; hits real external sources)
+apps/api/.venv/Scripts/python.exe docs/evidence/workflow/live_workflow_test.py
+# expect: 62 passed, 0 failed
+```
+
+The backend suite provisions a dedicated `opportunityos_test` database per run (schema dropped, re-migrated, fail-loud isolation guard) — it can never modify development data. The live workflow test is the one deliberate exception: it drives the real stack and writes clearly-marked synthetic records to the development database.
+
+Engineering workflow: inspect, make one coherent scoped change, add tests for success and failure behavior, run the relevant suites, review security boundaries, then record and commit the verified milestone.
 
 ## Data and privacy principles
 
-- Store only information required for the intended workflow.
-- Keep contact details linked to their source and verification status.
-- Treat resumes and other personal documents as sensitive user data.
-- Never hard-code credentials, API tokens, SMTP passwords, or session cookies.
-- Avoid fabricating company facts, contact details, deadlines, salary, or hiring status.
+- Store only what the workflow requires.
+- Keep contact details linked to source and verification status.
+- Treat resumes and personal documents as sensitive data.
+- Never hard-code credentials, tokens, or session cookies.
+- Never fabricate company facts, contact details, deadlines, salary, or hiring status.
 - Make external actions visible and auditable.
-- Respect provider terms, access controls, rate limits, and applicable privacy requirements.
-- Prefer free/open-source services where practical; make optional AI providers configurable rather than requiring a specific paid provider.
+- Respect provider terms, access controls, and rate limits.
+- Prefer open-source services; keep optional AI providers configurable.
 
 ## Deployment
 
-See **[DEPLOY.md](DEPLOY.md)** for the repository's deployment and operational guidance. Before exposing the application publicly, review authentication and access control, HTTPS termination, database backups, secret handling, rate limiting, document storage, and the deployment's threat model. Do not assume that a single-user local development setup is ready for public multi-user use without these safeguards.
+See **[DEPLOY.md](DEPLOY.md)** for the full guide, including a step-by-step **production deployment checklist** (verification gates, infrastructure, secrets, post-deploy smoke tests). Before exposing the app publicly, review the threat model and limitations in [docs/evidence/LIMITATIONS.md](docs/evidence/LIMITATIONS.md): this is a single-user application and is not ready for multi-user hosting without account and isolation work.
 
 ## Contributing
 
 This is an actively developed personal project. Before proposing a change:
 
-- Check the existing service and route patterns before adding parallel logic.
+- Check existing service and route patterns before adding parallel logic.
 - Reuse canonical models and lifecycle services.
 - Keep migration history coherent.
-- Add tests for success, validation, idempotency, authorization, and failure behavior where applicable.
+- Add tests for success, validation, idempotency, authorization, and failure behavior.
 - Document whether a capability is implemented, partially implemented, or planned.
 
 ## North star
 
-> **OpportunityOS should help turn a broad goal into a prioritized set of real opportunities—and turn each chosen opportunity into a well-prepared, trackable next action.**
+> **OpportunityOS turns a broad goal into a prioritized set of real opportunities—and turns each chosen opportunity into a well-prepared, trackable next action.**
 
 Discover intelligently. Decide transparently. Prepare carefully. Act with control. Learn from outcomes.
 
 ---
 
-**Repository:** [Sanjayram3269/OpportunityOS](https://github.com/Sanjayram3269/OpportunityOS)  
+**Repository:** [Sanjayram3269/OpportunityOS](https://github.com/Sanjayram3269/OpportunityOS)
 **Owner:** Sanjayram P.

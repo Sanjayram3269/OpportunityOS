@@ -1,7 +1,12 @@
 // Centralized API client for OpportunityOS backend.
 // All fetch calls go through here for consistent error handling.
+//
+// SECURITY: every request goes to the Next.js BFF at /api/bff/* on the
+// same origin. The browser never holds the FastAPI bearer token — the BFF
+// attaches it server-side after validating the HttpOnly session cookie.
+// Do NOT add Authorization headers or NEXT_PUBLIC_* secrets here.
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const BASE_URL = "/api/bff";
 
 type GenerateActionsResponse = {
   generated: number;
@@ -33,11 +38,12 @@ async function request<T>(
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
   const res = await fetch(url, {
+    credentials: "same-origin", // send the HttpOnly session cookie
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
-    ...options,
   });
 
   if (!res.ok) {
@@ -47,6 +53,16 @@ async function request<T>(
       detail = body.detail || detail;
     } catch {
       // ignore
+    }
+    // Make auth failures actionable instead of surfacing raw 401/503 text.
+    if (res.status === 401) {
+      detail = "You are not signed in, or your session has expired. Please sign in again.";
+      // Notify the session gate so it can redirect to /login immediately.
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("bff:unauthorized"));
+      }
+    } else if (res.status === 503 && detail.toLowerCase().includes("authentication")) {
+      detail = `${detail} (Set API_AUTH_TOKEN on the server and restart it.)`;
     }
     throw new ApiError(res.status, detail);
   }

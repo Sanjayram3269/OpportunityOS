@@ -3,20 +3,17 @@
 import React, { useState, useCallback } from "react";
 import { useApi } from "@/lib/hooks";
 import { campaigns, analyticsDeep } from "@/lib/api";
-import type { Campaign, EnhancedCampaignSummary, CampaignPlanningItem, CampaignActionSummary, CampaignDrilldownResponse } from "@/lib/types";
+import type { Campaign, CampaignDrilldownResponse } from "@/lib/types";
 import {
   Card,
-  CardHeader,
-  CardContent,
   EmptyState,
   ErrorState,
   Spinner,
   Button,
   Badge,
   StatusDot,
-  SectionHeader,
 } from "@/components/ui";
-import { STATUS_COLORS, HORIZON_COLORS, OPPORTUNITY_TYPE_LABELS } from "@/lib/types";
+import { STATUS_COLORS, HORIZON_COLORS } from "@/lib/types";
 
 export function CampaignsPage() {
   const { data, loading, error, refetch } = useApi(() => campaigns.list({ limit: 100 }), []);
@@ -101,7 +98,7 @@ function CampaignCard({
     [isSelected, campaign.id],
   );
 
-  const { data: actionSummary, loading: actionLoading2 } = useApi(
+  const { data: actionSummary } = useApi(
     useCallback(
       () => isSelected ? campaigns.actionSummary(campaign.id) : Promise.resolve(null),
       [isSelected, campaign.id],

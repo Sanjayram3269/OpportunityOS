@@ -26,10 +26,21 @@ class ProfileFeatures:
     bio: str | None = None
     headline_skills: set[str] = field(default_factory=set)
     bio_skills: set[str] = field(default_factory=set)
+    skills_summary_skills: set[str] = field(default_factory=set)
     preferred_role_types: str | None = None
     preferred_cities: str | None = None
     geographic_preference: str | None = None
     current_city: str | None = None
+    minimum_compensation: str | None = None
+    availability_start: int | None = None
+    availability_end: int | None = None
+    work_arrangement: str | None = None
+    notable_achievements: str | None = None
+    skills_summary: str | None = None
+    degree: str | None = None
+    field_of_study: str | None = None
+    institution: str | None = None
+    graduation_year: int | None = None
 
     @property
     def all_skills(self) -> set[str]:
@@ -39,6 +50,7 @@ class ProfileFeatures:
             | self.project_technologies
             | self.headline_skills
             | self.bio_skills
+            | self.skills_summary_skills
         )
 
     @property
@@ -120,6 +132,16 @@ def extract_profile_features(
     if profile.bio:
         features.bio = profile.bio
         features.bio_skills = extract_skills_from_text(profile.bio)
+
+    # ── Skills from the skills_summary free-text field ──────────
+    # The profile form's primary "Skills" input writes here. Without
+    # parsing it, that input contributed nothing to match scores
+    # (observed live: changing skills_summary never moved a score).
+    if profile.skills_summary:
+        features.skills_summary = profile.skills_summary
+        features.skills_summary_skills = extract_skills_from_text(
+            profile.skills_summary
+        )
 
     # ── Profile preferences for matching ────────────────────────────
     features.preferred_role_types = profile.preferred_role_types

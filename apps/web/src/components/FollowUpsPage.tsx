@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useApi } from "@/lib/hooks";
 import { followups } from "@/lib/api";
-import type { FollowUp } from "@/lib/types";
 import {
   Card,
   EmptyState,

@@ -123,8 +123,6 @@ def _location_compatible(profile_loc: str | None, opp_loc: str | None) -> int:
     return 2
 
 
-# ── Opportunity type matching ─────────────────────────────────────────────
-
 _TYPE_COMPATIBILITY: dict[str, list[str]] = {
     "INTERNSHIP": ["INTERNSHIP"],
     "FULL_TIME": ["FULL_TIME", "INTERNSHIP"],
@@ -362,10 +360,25 @@ def score_match(
 
     # ── Location fit (0–10) ───────────────────────────────────────
     # Use profile current city / geographic preference for location matching
-    loc_score = _location_compatible(
-        getattr(profile_features, "current_city", None),
-        opp_features.location,
+    profile_geographic_preference = getattr(
+        profile_features, "geographic_preference", None
     )
+    profile_current_city = getattr(profile_features, "current_city", None)
+    
+    # Compute standard location compatibility
+    loc_score = _location_compatible(profile_current_city, opp_features.location)
+    
+    # Apply geographic preference override:
+    # If profile has geographic_preference="Remote" or "Worldwide",
+    # and the opportunity title contains remote/Worldwide keywords,
+    # treat as fully compatible (score 10)
+    if profile_geographic_preference and loc_score < 10:
+        pref_upper = profile_geographic_preference.upper().strip()
+        if pref_upper in ("REMOTE", "WORLDWIDE"):
+            opp_title_lower = (opp_features.title or "").lower()
+            if any(kw in opp_title_lower for kw in _REMOTE_KEYWORDS):
+                loc_score = 10
+    
     result.location_fit_score = loc_score
     if loc_score >= 8:
         result.matched_signals.append(f"Location compatible: {opp_features.location or 'flexible'}")

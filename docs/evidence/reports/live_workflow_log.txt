@@ -1,0 +1,87 @@
+
+=== A. Authentication ===
+[PASS] A1 session unauthenticated before login
+[PASS] A2 login succeeds — HTTP 200
+[PASS] A3 session cookie is HttpOnly + SameSite=Lax + Secure
+[PASS] A4 login response body contains no token
+[PASS] A5 session authenticated after login
+[PASS] A6 unauthenticated BFF call rejected 401
+[PASS] A7 unauthenticated write rejected 401
+[PASS] A8 cross-site write rejected 403 (CSRF)
+
+=== B. Profile lifecycle ===
+[PASS] B1 demo profile reused from a previous run — id=5726, HTTP 200
+[PASS] B2 profile persisted across reload (skills round-trip)
+[PASS] B3 profile persisted (geographic preference)
+[PASS] B4 duplicate profile rejected 409 (no dupes on resubmit) — HTTP 409
+[PASS] B5 exactly one demo profile exists — demo profiles=1, total=1
+
+=== C. Discovery (real external sources) ===
+[PASS] C1 discovery health endpoint responds — status=healthy, active=['arbeitnow', 'himalayas', 'remotive']
+[PASS] C2 automation run (discovery+matching+planning) completes — 2.9s, status=COMPLETED
+[PASS] C3 at least one real external source succeeded — remotive: raw=9 ingested=0 err=[]; arbeitnow: raw=300 ingested=0 err=[]; himalayas: raw=20 ingested=0 err=[]
+[PASS] C4 opportunities ingested or verified from live sources — created=0, deduped=322
+[PASS] C5 ingested opportunities visible via API — count=324
+[PASS] C6 unknown source fails gracefully (no 5xx) — HTTP 200, errors=["Unknown source: 'not-a-real-source'. Available sources: arbeitnow, handshake, himalayas, jobstep, linkedin, remotive"]
+[PASS] C7 auth-required stub source fails gracefully — errors=["Source 'linkedin' requires authorized integration"]
+[PASS] C8 re-run deduplicates every known opportunity — deduped=322, created=0 (new live listings), re-ingested=0
+[PASS] C9 no duplicate opportunities after re-run — 324 -> 324 opportunities, 0 duplicate source_urls
+
+=== D. Matching & scoring ===
+[PASS] D1 ranked matches returned — total=324
+[PASS] D2 all opportunities carry an integer score — 100/100
+[PASS] D3 top match has explanation text — 'Moderate match. with 4 shared skills. (1 concern).'
+[PASS] D4 top match has component score breakdown — {"skill_overlap_score": 25, "title_relevance_score": 8, "location_fit_score": 10, "type_fit_score": 5}
+[PASS] D5 results sorted by score descending
+[PASS] D6 scores within 0-100
+[PASS] D7 stored opportunity scores populated (automation) — scored=324/324
+[PASS] D8 scoring is deterministic (identical on repeat)
+
+=== E. Preference changes ===
+[PASS] E1 profile preferences updated
+[PASS] E2 live re-ranking responds to preference change — top score 48 -> 31
+[PASS] E3 preferences restored
+[PASS] E4 scores restored after preference restore — 48 -> 48
+
+=== F. Planning, filters, export ===
+[PASS] F1 planning list returns data — total=5
+[PASS] F2 planning item has horizon + priority + score — {"planning_horizon": "NOW", "planning_priority": 74, "match_score": 46}
+[PASS] F3 min_match_score filter works — 100 items with score>=1
+[PASS] F4 limit/pagination parameter respected
+[PASS] F5 XLSX export streams through BFF — application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+=== G. Outreach workflow (approval enforced) ===
+[PASS] G1 synthetic company reused from a previous run — id=29280
+[PASS] G2 synthetic lead reused from a previous run — id=9725
+[PASS] G3 draft generated (template fallback, no AI key)
+[PASS] G4 draft starts in DRAFT status — DRAFT
+[PASS] G5 draft body is personalized (mentions skills or title)
+[PASS] G6 send from DRAFT rejected 409 (approval required) — HTTP 409
+[PASS] G7 approve from DRAFT rejected 409 (must submit first) — HTTP 409
+[PASS] G8 ready-from-DRAFT rejected 409
+[PASS] G9 submit DRAFT->PENDING_APPROVAL
+[PASS] G10 approve PENDING_APPROVAL->APPROVED
+[PASS] G11 ready APPROVED->READY_TO_SEND
+[PASS] G12 send without email provider fails safely (no real email) — success=False, error='Email provider not configured'
+[PASS] G13 failed send leaves draft READY_TO_SEND (not SENT) — READY_TO_SEND
+[PASS] G14 no messages in SENT state anywhere — total=0
+
+=== H. dashboards & intelligence surfaces ===
+[PASS] H1 dashboard overview responds
+[PASS] H2 action items generated — count=4
+[PASS] H3 notifications synced — count=8
+[PASS] H4 analytics overview responds
+[PASS] H5 automation run history persisted — total=8
+[PASS] H6 action generation is idempotent (2nd run adds nothing) — 5 -> 5
+
+=== I. Status updates ===
+[PASS] I1 opportunity status update works
+[PASS] I2 status restored
+
+=== J. Session expiry ===
+[PASS] J1 forged/expired session rejected 401
+
+======================================================================
+LIVE WORKFLOW RESULT: 62 passed, 0 failed (62 checks)
+======================================================================
+Machine-readable results: C:\Users\SANJAYRAM\OpportunityOS\docs\evidence\workflow\live_workflow_results.json

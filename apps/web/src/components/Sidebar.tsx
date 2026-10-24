@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { notifications } from "@/lib/api";
+import { signOut } from "@/components/SessionGate";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "📊" },
@@ -31,7 +32,14 @@ export function Sidebar({
   onClose?: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/login");
+    router.refresh();
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -94,8 +102,8 @@ export function Sidebar({
                 onClick={onClose}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100 ${isActive
                   ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"`
-                }`}
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}
+                `}
               >
                 <span className="text-base">{item.icon}</span>
                 {item.label}
@@ -110,7 +118,14 @@ export function Sidebar({
         </nav>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-100">
+        <div className="px-5 py-4 border-t border-gray-100 space-y-2">
+          <button
+            onClick={handleSignOut}
+            className="w-full text-left text-xs font-medium text-gray-500 hover:text-red-600 transition-colors"
+            data-testid="sign-out-button"
+          >
+            Sign out
+          </button>
           <div className="text-[10px] text-gray-400">
             v0.1.0 · PostgreSQL · FastAPI
           </div>

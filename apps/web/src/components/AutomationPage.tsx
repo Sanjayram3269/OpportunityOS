@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useApi } from "@/lib/hooks";
 import { automation } from "@/lib/api";
 import type {
-  AutomationConfig,
   AutomationRunResult,
   AutomationRunHistoryItem,
 } from "@/lib/types";

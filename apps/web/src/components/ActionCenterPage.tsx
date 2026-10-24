@@ -47,17 +47,19 @@ export function ActionCenterPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>("");
 
   const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const params: Record<string, string | number> = {};
-      if (filter) params.status = filter;
-      if (priorityFilter) params.priority = priorityFilter;
+    // No synchronous setState here (first load starts with loading=true,
+    // and filter changes show the previous list while the new one loads):
+    // the effect that calls this must not trigger cascading renders.
+    const params: Record<string, string | number> = {};
+    if (filter) params.status = filter;
+    if (priorityFilter) params.priority = priorityFilter;
 
+    try {
       const [actionsList, summaryData] = await Promise.all([
         actionsApi.list(params),
         actionsApi.summary(),
       ]);
+      setError(null);
       setActionItems(actionsList);
       setSummary(summaryData);
     } catch (err) {
@@ -68,8 +70,31 @@ export function ActionCenterPage() {
   }, [filter, priorityFilter]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // Fetch directly with promise callbacks (not via fetchData) so no
+    // setState runs synchronously in the effect body, and stale responses
+    // for a previous filter are ignored.
+    let cancelled = false;
+    const params: Record<string, string | number> = {};
+    if (filter) params.status = filter;
+    if (priorityFilter) params.priority = priorityFilter;
+    Promise.all([actionsApi.list(params), actionsApi.summary()])
+      .then(([actionsList, summaryData]) => {
+        if (cancelled) return;
+        setError(null);
+        setActionItems(actionsList);
+        setSummary(summaryData);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load actions");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filter, priorityFilter]);
 
   const handleGenerate = async () => {
     try {

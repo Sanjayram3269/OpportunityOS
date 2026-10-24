@@ -14,8 +14,6 @@ import {
   Button,
   Badge,
   StatusDot,
-  SectionHeader,
-  Select,
 } from "@/components/ui";
 import { STATUS_COLORS } from "@/lib/types";
 

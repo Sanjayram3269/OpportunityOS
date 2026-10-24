@@ -145,6 +145,12 @@ class AutomationScheduler:
                     trigger=RunTrigger.SCHEDULER,
                     dry_run=settings.automation_dry_run,
                 )
+                # The engine works in flushes; this is where the transaction
+                # is actually committed. Without this, match scores, action
+                # items, notifications and the run record are all rolled
+                # back when the session closes (observed live: scores and
+                # run history silently vanished).
+                db.commit()
                 self._last_run = result
 
                 logger.info(
@@ -153,6 +159,7 @@ class AutomationScheduler:
                 )
             except Exception as exc:
                 logger.error("Scheduled automation run failed: %s", exc)
+                db.rollback()
             finally:
                 db.close()
 
@@ -176,8 +183,15 @@ class AutomationScheduler:
                     dry_run=dry_run,
                     source_override=source_override,
                 )
+                # Commit the cycle's flushed work (scores, actions,
+                # notifications, run record). The engine deliberately only
+                # flushes so the caller owns the transaction boundary.
+                db.commit()
                 self._last_run = result
                 return result
+            except Exception:
+                db.rollback()
+                raise
             finally:
                 db.close()
 

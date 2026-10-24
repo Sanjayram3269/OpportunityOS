@@ -12,7 +12,6 @@ import {
   Card,
   CardHeader,
   CardContent,
-  EmptyState,
   ErrorState,
   Spinner,
   Button,
@@ -39,7 +38,6 @@ export function DiscoverPage() {
 
   const {
     data: healthData,
-    loading: healthLoading,
   } = useApi(() => discovery.health(), []);
 
   const [runningSource, setRunningSource] = useState<string | null>(null);

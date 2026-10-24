@@ -197,6 +197,54 @@ class TestSchedulerOverlapPrevention:
 
             mock_session.close.assert_called_once()
 
+    def test_manual_run_commits_the_cycles_work(self):
+        """A successful manual run must COMMIT, not just flush.
+
+        Regression test: the engine works in flushes and the scheduler used
+        to close the session without committing, silently rolling back match
+        scores, action items, notifications and the automation run record
+        (found live: 322 scored opportunities all had NULL match_score and
+        the run history was empty).
+        """
+        from app.automation.scheduler import AutomationScheduler
+
+        with patch("app.automation.scheduler.get_settings") as m, \
+             patch("app.automation.scheduler.SessionLocal") as mock_sf, \
+             patch("app.automation.scheduler.run_automation_cycle") as mock_run:
+            m.return_value = _mock_settings()
+            mock_session = MagicMock()
+            mock_sf.return_value = mock_session
+            mock_run.return_value = _mock_run_result()
+
+            s = AutomationScheduler()
+            asyncio.run(s.execute_manual_run(dry_run=False))
+
+            mock_session.commit.assert_called_once()
+            mock_session.rollback.assert_not_called()
+            mock_session.close.assert_called_once()
+            # Commit must happen before close so work is durable.
+            assert mock_session.commit.call_count == 1
+
+    def test_failed_manual_run_rolls_back_and_does_not_commit(self):
+        """A failed cycle must roll back, never commit partial state."""
+        from app.automation.scheduler import AutomationScheduler
+
+        with patch("app.automation.scheduler.get_settings") as m, \
+             patch("app.automation.scheduler.SessionLocal") as mock_sf, \
+             patch("app.automation.scheduler.run_automation_cycle") as mock_run:
+            m.return_value = _mock_settings()
+            mock_session = MagicMock()
+            mock_sf.return_value = mock_session
+            mock_run.side_effect = RuntimeError("pipeline exploded")
+
+            s = AutomationScheduler()
+            with pytest.raises(RuntimeError):
+                asyncio.run(s.execute_manual_run(dry_run=False))
+
+            mock_session.rollback.assert_called_once()
+            mock_session.commit.assert_not_called()
+            mock_session.close.assert_called_once()
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  FAILURE RECOVERY

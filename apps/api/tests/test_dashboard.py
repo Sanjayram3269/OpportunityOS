@@ -18,6 +18,7 @@ Covers:
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -25,7 +26,11 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+# Auth-protected API: conftest sets API_AUTH_TOKEN before app import.
+client = TestClient(
+    app,
+    headers={"Authorization": f"Bearer {os.environ['API_AUTH_TOKEN']}"},
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────

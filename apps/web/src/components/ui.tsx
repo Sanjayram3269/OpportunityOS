@@ -273,6 +273,53 @@ export function Input({
   );
 }
 
+// ── Label ────────────────────────────────────────────────────────────────
+
+export function Label({
+  children,
+  htmlFor,
+}: {
+  children: React.ReactNode;
+  htmlFor?: string;
+}) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      {children}
+    </label>
+  );
+}
+
+// ── Textarea ──────────────────────────────────────────────────────────────
+
+export function Textarea({
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+  className = "",
+  ...props
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  rows?: number;
+  className?: string;
+} & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "value">) {
+  return (
+    <textarea
+      rows={rows}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${className}`}
+      {...props}
+    />
+  );
+}
+
 // ── Select ───────────────────────────────────────────────────────────────
 
 export function Select({

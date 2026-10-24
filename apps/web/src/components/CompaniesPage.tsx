@@ -3,16 +3,13 @@
 import React, { useState } from "react";
 import { useApi } from "@/lib/hooks";
 import { companies as companiesApi } from "@/lib/api";
-import type { Company } from "@/lib/types";
 import {
   Card,
   EmptyState,
   ErrorState,
   Spinner,
   Badge,
-  Button,
   Input,
-  SectionHeader,
 } from "@/components/ui";
 
 export function CompaniesPage() {
@@ -32,7 +29,6 @@ export function CompaniesPage() {
       )
     : allCompanies;
 
-  const selected = selectedId !== null ? allCompanies.find((c) => c.id === selectedId) : null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

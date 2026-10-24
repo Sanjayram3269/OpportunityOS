@@ -20,7 +20,7 @@ class TestPreferenceRegression:
         of = OpportunityFeatures(title="Remote Software Engineer", type="FULL_TIME", location="Chennai")
 
         result = score_match(pf, of)
-        assert result.location_fit_score >= 5  # Remote preference should be compatible
+        assert result.location_fit_score == 10  # Remote preference + Remote in title → override to 10
 
     def test_exact_city_match_high_score(self):
         """Exact city match should give high location fit score."""
@@ -82,7 +82,8 @@ class TestPreferenceRegression:
 
         result = score_match(pf, of)
         # Remote keyword in title should make it compatible
-        assert result.location_fit_score >= 5
+        # Remote keyword in title should make it compatible → override to 10
+        assert result.location_fit_score == 10
 
         # preferred_cities=Worldwide → exact match gives 10
         pf = ProfileFeatures(preferred_cities="Worldwide")
@@ -115,4 +116,5 @@ class TestPreferenceRegression:
         of = OpportunityFeatures(title="Remote Software Engineer", type="FULL_TIME", location="Chennai")
 
         result = score_match(pf, of)
-        assert result.location_fit_score >= 5
+        # Remote keyword in title should make it compatible → override to 10
+        assert result.location_fit_score == 10

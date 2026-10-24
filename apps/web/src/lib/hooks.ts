@@ -30,7 +30,10 @@ export function useApi<T>(
         err instanceof Error ? err.message : "Unknown error";
       setState({ data: null, loading: false, error: message });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Dynamic dependency list is this hook's contract (callers pass the same
+  // literal arrays they would give useEffect). The react-compiler rule
+  // requires a literal, so it is disabled for this one line only.
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   }, deps);
 
   useEffect(() => {

@@ -21,11 +21,16 @@ describe("API client", () => {
 
     await opportunities.list();
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/opportunities",
+      "/api/bff/opportunities",
       expect.objectContaining({
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
       }),
     );
+    // The client never attaches an Authorization header — the BFF does
+    // that server-side from the HttpOnly session cookie.
+    const init = mockFetch.mock.calls[0][1];
+    expect(init.headers.Authorization).toBeUndefined();
   });
 
   it("handles API errors", async () => {
@@ -285,10 +290,10 @@ describe("Planning horizons", () => {
 // ── Export Tests ─────────────────────────────────────────────────────────
 
 describe("Export", () => {
-  it("generates correct download URL", async () => {
+  it("generates correct download URL through the BFF", async () => {
     const { exports_ } = await import("@/lib/api");
     const url = exports_.downloadUrl();
-    expect(url).toBe("http://localhost:8000/exports/opportunities.xlsx");
+    expect(url).toBe("/api/bff/exports/opportunities.xlsx");
   });
 
   it("includes filter params in URL", async () => {
@@ -316,7 +321,7 @@ describe("Discovery", () => {
     const result = await discovery.sources();
     expect(result.sources).toEqual(["remotive", "arbeitnow"]);
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/discovery/sources",
+      "/api/bff/discovery/sources",
       expect.anything(),
     );
   });
@@ -338,7 +343,7 @@ describe("Discovery", () => {
     const result = await discovery.run("remotive");
     expect(result.ingested).toBe(6);
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/discovery/run/remotive",
+      "/api/bff/discovery/run/remotive",
       expect.objectContaining({ method: "POST" }),
     );
   });

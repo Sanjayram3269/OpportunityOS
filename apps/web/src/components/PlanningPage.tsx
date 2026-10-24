@@ -6,7 +6,6 @@ import { planning } from "@/lib/api";
 import type { EnrichedPlanningItem } from "@/lib/types";
 import {
   Card,
-  EmptyState,
   ErrorState,
   Spinner,
   ScoreBadge,

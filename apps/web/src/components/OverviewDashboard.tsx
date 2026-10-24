@@ -14,7 +14,6 @@ import {
   ErrorState,
   Spinner,
   Badge,
-  SectionHeader,
 } from "@/components/ui";
 
 export function OverviewDashboard() {

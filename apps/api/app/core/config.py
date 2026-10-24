@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
+    # ── Authentication ───────────────────────────────────────────────
+    # Single-owner bearer token. All API routes (except /health) require
+    # "Authorization: Bearer <token>". Empty = fail closed (every protected
+    # route returns 503). Generate with:
+    #   python -c "import secrets; print(secrets.token_urlsafe(32))"
+    api_auth_token: str = ""
+
     # ── CORS ──────────────────────────────────────────────────────────
     # Comma-separated list of allowed origins.
     # In development: http://localhost:3000,http://localhost:3001

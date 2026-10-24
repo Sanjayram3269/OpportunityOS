@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useApi } from "@/lib/hooks";
 import { leads as leadsApi } from "@/lib/api";
-import type { Lead } from "@/lib/types";
 import {
   Card,
   EmptyState,

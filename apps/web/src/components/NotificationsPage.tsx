@@ -6,7 +6,6 @@ import { notifications } from "@/lib/api";
 import type { NotificationItem } from "@/lib/types";
 import {
   Card,
-  CardHeader,
   CardContent,
   EmptyState,
   ErrorState,

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useApi } from "@/lib/hooks";
 import { planning, opportunities as oppsApi, applications as applicationsApi } from "@/lib/api";
-import type { PlanningHorizonInfo, Opportunity } from "@/lib/types";
 import {
   Card,
   EmptyState,
@@ -14,7 +13,6 @@ import {
   Button,
   Input,
   Select,
-  SectionHeader,
 } from "@/components/ui";
 import {
   HORIZON_COLORS,
@@ -45,7 +43,7 @@ export function OpportunitiesPage() {
   const allOpps = data?.opportunities || [];
 
   // Client-side filtering
-  let filtered = allOpps.filter((o) => {
+  const filtered = allOpps.filter((o) => {
     if (search) {
       const q = search.toLowerCase();
       if (!o.title.toLowerCase().includes(q)) return false;
